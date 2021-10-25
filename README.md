@@ -4,4 +4,8 @@ Control-level software to be run on the PIC24FJ128GA010 microcontroller, using t
 
 Upload to microcontroller via MPLAB X IDE v5.50
 
+### State Machine to be implemented:
+
+![State Machine to be Implemented](./images/StateMachineDiagram.png)
+
 More information to be uploaded shortly
