@@ -24,22 +24,22 @@ int main(void) {
         // display += 0x1;
         initButtons(0x000F); // All buttons as inputs: 0xF
         if (getButton(0x0001))
-            display = 0x01; //if S4 pressed, show 1
+            display |= 0x01; //if S4 pressed, show 1
         else
             display &= 0xFE; // 1st LED off if not pressed
         
         if (getButton(0x0002))
-            display = 0x02; //if S5 pressed, show 2
+            display |= 0x02; //if S5 pressed, show 2
         else
-            display &= 0xFD; // 2nd LED off if not pressed
+            display &= 0xFDx; // 2nd LED off if not pressed
 
         if (getButton(0x0004))
-            display = 0x04; //if B4 pressed, show 8
+            display |= 0x04; //if B4 pressed, show 8
         else
             display &= 0xFB; // 3rd LED off if not pressed
 
         if (getButton(0x0008))
-            display = 0x08; // else if RD6 pressed, show 8
+            display |= 0x08; // else if RD6 pressed, show 8
         else
             display &= 0xF7; // 3rd LED off if not pressed
 
