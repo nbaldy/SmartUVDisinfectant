@@ -102,7 +102,7 @@ void WaitForObject(State* state)
 void VerifyChamberReady(State* state)
 {
     Running(state); // Parent State
-    if (getButton(STATE_ACTIVE_CYCLE))
+    if (getButton(BUTTON_READY_FOR_NEXT))
     {
         // NOTE(NEB): For now, consider "ready" when button pressed.
         // Event: Chamber Ready

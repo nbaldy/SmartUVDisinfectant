@@ -22,6 +22,7 @@ void initButtons(unsigned int mask)
 
 unsigned int getButton(unsigned int mask) {
     unsigned int button;
+    initButtons(0x000F);
     switch (mask) {
         case 0x0008: button = !PORTDbits.RD6; // S3
             break;

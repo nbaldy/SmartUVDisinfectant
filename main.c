@@ -23,7 +23,7 @@ int main(void) {
 
     //endless loop
     while (1) {
-        msDelay(100); // delay approximately 0.1 second
+        msDelay(250); // delay approximately 0.25 second
         // display += 0x1;
         initButtons(0x000F); // All buttons as inputs: 0xF
         
