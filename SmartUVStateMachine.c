@@ -3,6 +3,46 @@
 #include "SmartUVStateMachine.h"
 #include "peripherals.h"
 
+#include   <stdio.h>
+#include   <stdlib.h>
+#include   <string.h>
+
+StateNameStr getStateNameStr(enum StateName state_enumeration)
+{
+    StateNameStr str_repr;
+
+    switch(state_enumeration)
+    {
+        case STATE_INITIALIZATION:
+           strcpy(str_repr.str, "INIT            ");
+           break;
+        case STATE_WAIT_FOR_OBJECT:
+           strcpy(str_repr.str, "WAIT FOR OBJ    ");
+           break;
+        case STATE_VERIFY_CHAMBER_READY:
+           strcpy(str_repr.str, "CHECK READY     ");
+           break;
+        case STATE_WAIT_FOR_CYCLE_START:
+           strcpy(str_repr.str, "WAIT FOR START  ");
+           break;
+        case STATE_ACTIVE_CYCLE:
+           strcpy(str_repr.str, "CYCLE ACTIVE    ");
+           break;
+        case STATE_WAIT_FOR_RELEASE:
+           strcpy(str_repr.str, "WAIT FOR RELEASE");
+           break;
+        case STATE_FAULT:
+           strcpy(str_repr.str, "FAULT           ");
+           break;
+        default:
+           strcpy(str_repr.str, "UNKNOWN STATE   ");
+           break;
+    }
+    
+    return str_repr;
+}
+
+
 struct State CreateNewStateMachine()
 {
     State new_sm;
@@ -15,6 +55,11 @@ void processCurrentState(State* current_state)
 {
     // Rebuilt display with each tick (TODO - reconsider this.)
     current_state->display = 0x00;
+    StateNameStr state_str = getStateNameStr(current_state->state_name);
+
+    // Print State Name at the top left corner.
+    SetCursorAtLine(1);
+    putsLCD((char *)state_str.str);
 
     switch(current_state->state_name)
     {

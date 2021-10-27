@@ -10,6 +10,10 @@
 
 #include <xc.h> // include processor files - each processor file is guarded.  
 
+/* strcpy */
+#include <stdio.h>
+#include <string.h>
+
 typedef enum StateName
 {
     STATE_UNKNOWN,
@@ -22,6 +26,14 @@ typedef enum StateName
     STATE_FAULT,
     STATE_RUNNING // Parent State Only
 } StateName;
+
+// 8-character representation of state name for display
+typedef struct StateNameStr
+{
+    char str[17]; // 16 char + nullcharacter
+} StateNameStr;
+
+StateNameStr getStateNameStr(enum StateName state_enumeration);
 
 // TODO(NEB): Fault Enum
 
