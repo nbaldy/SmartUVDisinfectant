@@ -18,15 +18,18 @@ int main(void) {
     SYSTEM_Initialize();
     initPortA();
     initButtons(0x000F); // All buttons as inputs: 0xF
-
+    msDelay(1000); // Give time to start up
+    InitPMP();
+    InitLCD();
+    
     State current_state = CreateNewStateMachine();
 
     //endless loop
     while (1) {
         msDelay(250); // delay approximately 0.25 second
-        // display += 0x1;
         initButtons(0x000F); // All buttons as inputs: 0xF
         
+    
         processCurrentState(&current_state); // Tick State Machine
     }
 }
