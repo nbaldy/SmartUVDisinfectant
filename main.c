@@ -16,14 +16,10 @@
 int main(void) {
     // initialize the device
     SYSTEM_Initialize();
-    initPortA();
-    initButtons(0x000F); // All buttons as inputs: 0xF
-    msDelay(1000); // Give time to start up
-    InitPMP();
-    InitLCD();
-    
-    State current_state = CreateNewStateMachine();
 
+    State current_state = InitStateMachine();
+
+    
     //endless loop
     while (1) {
         msDelay(250); // delay approximately 0.25 second

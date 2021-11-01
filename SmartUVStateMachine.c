@@ -7,6 +7,11 @@
 #include   <stdlib.h>
 #include   <string.h>
 
+#define LED_PIN PORTGbits.RG14
+#define LED_TRIS TRISGbits.TRISG14
+#define DOOR_PIN PORTGbits.RG13
+#define DOOR_TRIS TRISGbits.TRISG13
+
 StateNameStr getStateNameStr(enum StateName state_enumeration)
 {
     StateNameStr str_repr;
@@ -43,10 +48,24 @@ StateNameStr getStateNameStr(enum StateName state_enumeration)
 }
 
 
-struct State CreateNewStateMachine()
+struct State InitStateMachine()
 {
     State new_sm;
     new_sm.display = 0x00;
+    new_sm.state_name = STATE_UNKNOWN;
+    initPortA();
+    initButtons(0x000F); // All buttons as inputs: 0xF
+    msDelay(100); // Give time to start up
+    InitPMP();
+    InitLCD();
+    
+    // Use P97 = RG13 for door input
+    DOOR_TRIS = 1;
+    // Use P95 = RG14 for LED output
+    LED_TRIS = 0;
+    LED_PIN = 0;
+
+    new_sm.active_fault = FAULT_UNKNOWN;
     new_sm.state_name = STATE_INITIALIZATION;
     return new_sm;
 }
@@ -122,6 +141,8 @@ void Initialization(State* state)
         // NOTE(NEB): For now, consider "initialized" when button pressed.
         // Event: Init Complete
         state->state_name = STATE_WAIT_FOR_OBJECT;
+        // Clear any initialization faults
+        state->active_fault = NO_FAULT;
         return;
     }
     
@@ -132,9 +153,8 @@ void Initialization(State* state)
 void WaitForObject(State* state)
 {
     Running(state); // Parent State
-    if (getButton(BUTTON_READY_FOR_NEXT))
+    if (1 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
-        // NOTE(NEB): For now, consider "door closed" when button pressed.
         // Event: Door Closed
         state->state_name = STATE_VERIFY_CHAMBER_READY;
         return;
@@ -147,6 +167,12 @@ void WaitForObject(State* state)
 void VerifyChamberReady(State* state)
 {
     Running(state); // Parent State
+    if(0 == DOOR_PIN)
+    {
+        // Door opened verification, wait for closed again
+        state->state_name = STATE_WAIT_FOR_OBJECT;
+        return;
+    }
     if (getButton(BUTTON_READY_FOR_NEXT))
     {
         // NOTE(NEB): For now, consider "ready" when button pressed.
@@ -162,6 +188,15 @@ void VerifyChamberReady(State* state)
 void WaitForCycleClart(State* state)
 {
     Running(state); // Parent State
+
+    if(0 == DOOR_PIN)
+    {
+        // Door opened during wait for cycle, fault
+        state->active_fault = FAULT_DOOR_OPEN;
+        SetFault(state);
+        return;
+    }
+
     if (getButton(BUTTON_READY_FOR_NEXT))
     {
         // NOTE(NEB): For now, consider "started" when button pressed.
@@ -177,13 +212,25 @@ void WaitForCycleClart(State* state)
 void ActiveCycle(State* state)
 {
     Running(state); // Parent State
+    if(0 == DOOR_PIN)
+    {
+        // Door opened during active cycle, fault
+        LED_PIN = 0;
+        state->active_fault = FAULT_DOOR_OPEN;
+        SetFault(state);
+        return;
+    }
+
     if (getButton(BUTTON_READY_FOR_NEXT))
     {
         // NOTE(NEB): For now, consider "stopped" when button pressed.
         // Event: EITHER Stop Cmd Recieved OR Timer Expired
         state->state_name = STATE_WAIT_FOR_RELEASE;
+        LED_PIN = 0;
         return;
     }
+    
+    LED_PIN = 1;
     
     // TODO(NEB): Wait for stop cmd from wireless OR timer complete
     state->display |= 0x05;
@@ -191,10 +238,10 @@ void ActiveCycle(State* state)
 
 void WaitForRelease(State* state)
 {
+    // TODO(NEB): Unlock when get command from UI.
     Running(state); // Parent State
-    if (getButton(BUTTON_READY_FOR_NEXT))
+    if (0 == DOOR_PIN) // Move to next state when door opens/pull down
     {
-        // NOTE(NEB): For now, consider "unlocked" when button pressed.
         // Event: Unlock Cmd Recieved
         state->state_name = STATE_WAIT_FOR_OBJECT;
         return;
@@ -210,11 +257,13 @@ void Fault(State* state)
     {
         // NOTE(NEB): For now, consider "fault cleared" when button pressed.
         // Event: Fault Cleared
+        state->active_fault = NO_FAULT;
         state->state_name = STATE_INITIALIZATION;
         return;
     }
 
     state->display = 0x7F; // Active Fault
+    printFaultState(state->active_fault);
 }
 
 // Checks for faults & other "general" parent state needs
@@ -227,11 +276,35 @@ void Running(State* state)
     }
 
     state->display |= 0x80; // Set 1st LED
+    printFaultState(state->active_fault);
 }
 
 void SetFault(State *state)
 {
     state->state_name = STATE_FAULT;
     state->display = 0x3F; // Unprocessed Fault
+    LED_PIN = 0; // Turn LEDs off
     setPortA(state->display);
+}
+
+void printFaultState(FaultName fault_name)
+{
+    // Print Door Status at the bottom left.
+    SetCursorAtLine(2);
+    switch(fault_name)
+    {
+        case NO_FAULT:
+            putsLCD("--           ");
+            break;
+        case FAULT_ESTOP:
+            putsLCD("ESTOPPED     ");
+            break;
+        case FAULT_DOOR_OPEN:
+            putsLCD("DOOR OPEN    ");
+            break; 
+        default:
+        case FAULT_UNKNOWN:
+            putsLCD("Unknown Fault");
+            break;
+    }
 }

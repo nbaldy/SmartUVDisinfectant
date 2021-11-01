@@ -27,6 +27,14 @@ typedef enum StateName
     STATE_RUNNING // Parent State Only
 } StateName;
 
+typedef enum FaultName
+{
+    FAULT_UNKNOWN,
+    NO_FAULT,
+    FAULT_ESTOP,
+    FAULT_DOOR_OPEN
+} FaultName;
+
 // 8-character representation of state name for display
 typedef struct StateNameStr
 {
@@ -35,14 +43,13 @@ typedef struct StateNameStr
 
 StateNameStr getStateNameStr(enum StateName state_enumeration);
 
-// TODO(NEB): Fault Enum
 
 typedef struct State
 {
     // Parent state or unknown if None. Parent executes first.
     enum StateName state_name;
     unsigned char display;
-     
+    enum FaultName active_fault;
     // TODO(NEB): Store last known sensor status, Estop status, etc here.
 } State;
 
@@ -51,7 +58,7 @@ typedef struct State
  * "Public Interface", handles calls to all functions below*/
 void processCurrentState(State* current_state);
 
-State CreateNewStateMachine();
+State InitStateMachine();
 
 
 // Treat below functions as private.
@@ -66,6 +73,7 @@ void Fault(State* state);
 void Running(State* state);
 
 void SetFault(State* state); // TODO(NEB): Fault Codes, for now just set state.
+void printFaultState(FaultName fault_name);
 
 // TODO(NEB): Temporary for state proof.
 enum Buttons
