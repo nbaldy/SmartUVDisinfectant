@@ -28,6 +28,12 @@ void WriteLCD(int addr, char c);
 void putsLCD(char *s);
 void SetCursorAtLine(int i);
 
+void I2Cinit(int BRG);
+void I2CStart(void);
+void I2CStop(void);
+void I2Csendbyte(char data);
+char I2Cgetbyte(void);
+void us_delay(int n);
 
 #ifdef	__cplusplus
 }

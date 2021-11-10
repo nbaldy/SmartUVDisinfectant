@@ -2,6 +2,7 @@
 
 #include "SmartUVStateMachine.h"
 #include "peripherals.h"
+#include "AMG88.h" // IR Grid-eye
 
 #include   <stdio.h>
 #include   <stdlib.h>
@@ -58,6 +59,7 @@ struct State InitStateMachine()
     msDelay(100); // Give time to start up
     InitPMP();
     InitLCD();
+    I2Cinit(157);
     
     // Use P97 = RG13 for door input
     DOOR_TRIS = 1;
@@ -166,6 +168,10 @@ void WaitForObject(State* state)
 
 void VerifyChamberReady(State* state)
 {
+    I2CStart();
+    bReadTempFromGridEYE();
+    msDelay(10); // Give time to Read Everything
+    I2CStop();
     Running(state); // Parent State
     if(0 == DOOR_PIN)
     {
