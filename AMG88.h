@@ -49,6 +49,8 @@ void vAMG_PUB_TMP_ConvTemperature64( uchar*, short* );
 short shAMG_PUB_CMN_ConvFtoS( float );
 float  fAMG_PUB_CMN_ConvStoF( short );
 
-
+// t1 expected < t2
+int numPixelsInRange(short t1, short t2);
+short maxPixel();
 #endif	/* AMG88_H */
 

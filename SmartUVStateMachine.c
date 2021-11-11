@@ -173,7 +173,17 @@ void VerifyChamberReady(State* state)
     msDelay(10); // Give time to Read Everything
     I2CStop();
     Running(state); // Parent State
-    if(0 == DOOR_PIN)
+    
+    short max_pxl = maxPixel();
+    
+    SetCursorAtLine(2);
+    char str[16];
+    float max = (float) max_pxl/4; 
+    sprintf(str, "%f", max);
+
+    putsLCD(str);
+
+    if(0 == DOOR_PIN || 1 < numPixelsInRange(20, 50))
     {
         // Door opened verification, wait for closed again
         state->state_name = STATE_WAIT_FOR_OBJECT;

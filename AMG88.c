@@ -13,6 +13,8 @@ variable value definition
 short g_shThsTemp; /* thermistor temperature */
 short g_ashRawTemp[SNR_SZ]; /* temperature of 64 pixels */
 
+short g_maxThsTemp;
+
 /*******************************************************************************
 method
 ******************************************************************************/
@@ -54,14 +56,46 @@ bool bAMG_PUB_I2C_Read( uchar ucI2cAddr, uchar ucRegAddr, uchar ucSize, uchar* u
     /* This function is only interface definition. */
     I2Csendbyte(ucI2cAddr); // Send addr
     us_delay(100);
-    I2Csendbyte(ucRegAddr); // Send the register to read
-    us_delay(100);
     
     uchar *arr_ptr = ucDstAddr;
     int i;
     for(i = 0; i < ucSize; i++)
-        *arr_ptr = I2Cgetbyte();
-        arr_ptr += i;
+//    {
+//        // To read a register:
+//        // 1. Send the write command + register
+////        I2CStart();
+//        I2Csendbyte(ucI2cAddr); // Send addr, signify a read 
+//        I2Csendbyte(ucRegAddr + i); // Send the register to read
+//        // 2. Send start command + read command. 
+////        I2CStart();
+//        I2Csendbyte(ucI2cAddr + 1); // Send addr, signify a read 
+//        //. 3 wait for result.
+//        us_delay(100);
+//        break;
+////        *arr_ptr = I2Cgetbyte();
+////        arr_ptr += i;
+//    }
+    
+    {
+        I2Csendbyte(ucRegAddr + i); // Send the register to read
+        us_delay(100);
+//        *arr_ptr = I2Cgetbyte();
+//        arr_ptr += i;
+    }
+        
+//        // To read a register:
+//        // 1. Send the write command + register
+//        I2CStart();
+//        I2Csendbyte(ucI2cAddr); // Send addr, signify a read 
+//        I2Csendbyte(ucRegAddr + i); // Send the register to read
+//        // 2. Send start command + read command. 
+//        I2CStart();
+//        I2Csendbyte(ucI2cAddr + 1); // Send addr, signify a read 
+//        //. 3 wait for result.
+//        us_delay(100);
+////        *arr_ptr = I2Cgetbyte();
+////        arr_ptr += i;
+//  
     return( TRUE );
 }
 
@@ -127,4 +161,30 @@ Convert value.
 float fAMG_PUB_CMN_ConvStoF( short shVal )
 {
     return( (float)shVal / 256 );
+}
+
+int numPixelsInRange(short t1, short t2)
+{
+    int num_in_range = 0;
+    int i;
+    for (i = 0; i < SNR_SZ; i++)
+    {
+        if(t1 <= g_ashRawTemp[i] && g_ashRawTemp[i] < g_ashRawTemp[i])
+          num_in_range++;  
+    }
+    
+    return num_in_range;
+}
+
+short maxPixel()
+{
+    int largest_value = -100;
+    int i;
+    for (i = 0; i < SNR_SZ; i++)
+    {
+        if(largest_value < g_ashRawTemp[i])
+          largest_value = g_ashRawTemp[i];  
+    }
+    
+    return largest_value;    
 }
