@@ -168,10 +168,8 @@ void WaitForObject(State* state)
 
 void VerifyChamberReady(State* state)
 {
-    I2CStart();
     bReadTempFromGridEYE();
     msDelay(10); // Give time to Read Everything
-    I2CStop();
     Running(state); // Parent State
     
     short max_pxl = maxPixel();

@@ -54,48 +54,37 @@ bool bAMG_PUB_I2C_Read( uchar ucI2cAddr, uchar ucRegAddr, uchar ucSize, uchar* u
     /* ucDstAddr : Destination address of MCU */
     /* return : TRUE: success, FALSE: failure */
     /* This function is only interface definition. */
-    I2Csendbyte(ucI2cAddr); // Send addr
-    us_delay(100);
+
     
     uchar *arr_ptr = ucDstAddr;
     int i;
-    for(i = 0; i < ucSize; i++)
-//    {
-//        // To read a register:
-//        // 1. Send the write command + register
-////        I2CStart();
-//        I2Csendbyte(ucI2cAddr); // Send addr, signify a read 
-//        I2Csendbyte(ucRegAddr + i); // Send the register to read
-//        // 2. Send start command + read command. 
-////        I2CStart();
-//        I2Csendbyte(ucI2cAddr + 1); // Send addr, signify a read 
-//        //. 3 wait for result.
-//        us_delay(100);
-//        break;
-////        *arr_ptr = I2Cgetbyte();
-////        arr_ptr += i;
-//    }
-    
+    for(i = 0; i < ucSize; i++)    
     {
+        // To read a register:
+        // 1. Send the write command + register
+        I2CStart();
+        I2Csendbyte(ucI2cAddr); // Send addr, signify a read 
+        us_delay(100);
         I2Csendbyte(ucRegAddr + i); // Send the register to read
         us_delay(100);
+        I2CStop();
+        
+        // 2. Send start command + read command. 
+        I2CStart();
+        us_delay(100);
+        I2Csendbyte(ucI2cAddr + 1); // Send addr, signify a read 
+
+        //. 3 wait for result.
+        us_delay(100);        
+        char temp = I2Cgetbyte();
+        us_delay(100);
+        PORTA = 0x44;
+        I2CStop();
+        
 //        *arr_ptr = I2Cgetbyte();
 //        arr_ptr += i;
     }
-        
-//        // To read a register:
-//        // 1. Send the write command + register
-//        I2CStart();
-//        I2Csendbyte(ucI2cAddr); // Send addr, signify a read 
-//        I2Csendbyte(ucRegAddr + i); // Send the register to read
-//        // 2. Send start command + read command. 
-//        I2CStart();
-//        I2Csendbyte(ucI2cAddr + 1); // Send addr, signify a read 
-//        //. 3 wait for result.
-//        us_delay(100);
-////        *arr_ptr = I2Cgetbyte();
-////        arr_ptr += i;
-//  
+
     return( TRUE );
 }
 
