@@ -172,22 +172,24 @@ void VerifyChamberReady(State* state)
     msDelay(10); // Give time to Read Everything
     Running(state); // Parent State
     
-    short max_pxl = maxPixel();
+    short max_pxl = maxPixel(); // 256 * Temp_In_C
     
     SetCursorAtLine(2);
     char str[16];
-    float max = (float) max_pxl/4; 
-    sprintf(str, "%f", max);
+    double max_C = (double) max_pxl / (256); 
+    int num_pxls_body_temp = numPixelsInRange(27*256, 40*256); // between 27 and 40 C for now
+
+    sprintf(str, "%4.2f C; r=%d", max_C, num_pxls_body_temp);
 
     putsLCD(str);
 
-    if(0 == DOOR_PIN || 1 < numPixelsInRange(20, 50))
+    if(0 == DOOR_PIN)
     {
         // Door opened verification, wait for closed again
         state->state_name = STATE_WAIT_FOR_OBJECT;
         return;
     }
-    if (getButton(BUTTON_READY_FOR_NEXT))
+    if (getButton(BUTTON_READY_FOR_NEXT) || 3 < num_pxls_body_temp) // More than 3 pixels in this range
     {
         // NOTE(NEB): For now, consider "ready" when button pressed.
         // Event: Chamber Ready

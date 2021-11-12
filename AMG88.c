@@ -80,8 +80,8 @@ bool bAMG_PUB_I2C_Read( uchar ucI2cAddr, uchar ucRegAddr, uchar ucSize, uchar* u
         us_delay(100);
         I2CStop();
         
-//        *arr_ptr = I2Cgetbyte();
-//        arr_ptr += i;
+        *arr_ptr = temp;
+        arr_ptr ++;
     }
 
     return( TRUE );
@@ -157,7 +157,7 @@ int numPixelsInRange(short t1, short t2)
     int i;
     for (i = 0; i < SNR_SZ; i++)
     {
-        if(t1 <= g_ashRawTemp[i] && g_ashRawTemp[i] < g_ashRawTemp[i])
+        if(t1 <= g_ashRawTemp[i] && g_ashRawTemp[i] < t2)
           num_in_range++;  
     }
     
