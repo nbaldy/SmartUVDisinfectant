@@ -30,6 +30,7 @@ typedef unsigned char uchar;
 
 /* Grid-EYE's register size */
 #define GRIDEYE_REGSZ_THS (0x02) /* size of thermistor resister */
+// 128 temperature registers, 64 Hi, 64 lo
 #define GRIDEYE_REGSZ_TMP (0x80) /* size of temperature resister */
 
 

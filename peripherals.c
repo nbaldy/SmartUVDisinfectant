@@ -3,7 +3,7 @@
  * Luke Rogers
  * Jason Colonna
  * 9/15/20
- * Modifications by Nicole Baldy, 10/2021
+ * Modifications by Nicole Baldy, 11/2021
 **/
 #include <xc.h> // Generic header for XC16 Compiler
 #define SCALE 1200L // Found by experimentation (A Poor delay method.)
@@ -149,10 +149,12 @@ void I2CStart(void)
 
 void I2CStop(void) 
 {
-    us_delay(10); // delay to be safe 
+    us_delay(20); // delay to be safe 
+
     I2C1CONbits.PEN = 1; // see 5.5 pg. 27 of Microchip I2C manual DS70000195F 
-    while (I2C1CONbits.PEN); // This is at hardware level, & I suspect fast. 
-    us_delay(10); // delay to be safe 
+    while (I2C1CONbits.PEN); // This is at hardware level, & I suspect fast.
+    us_delay(20); // delay to be safe 
+
 }
 
 void I2Csendbyte(char data) 
@@ -165,9 +167,13 @@ void I2Csendbyte(char data)
 char I2Cgetbyte(void) 
 {
     I2C1CONbits.RCEN = 1; // Set RCEN, Enables I2C Receive mode 
-    while (!I2C1STATbits.RBF); //wait for byte to shift into I2C1RCV register 
-    I2C1CONbits.ACKEN = 1; // Master sends Acknowledge 
+    us_delay(10); // Configure timer and give time to receive
+    TMR1 = 0;
+    while (!I2C1STATbits.RBF && TMR1 < 100 * 2); //wait for byte to shift into I2C1RCV register, max 100 us.
+    // TODO(NEB): Fix this - for some reason, the I2C bus freezes if there is an ack. 
+    //    I2C1CONbits.ACKEN = I2C1STATbits.RBF; // Master sends Acknowledge 
     us_delay(10); // delay to be safe 
+        
     return (I2C1RCV);
 }
 

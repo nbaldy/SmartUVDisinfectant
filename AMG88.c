@@ -78,7 +78,6 @@ bool bAMG_PUB_I2C_Read( uchar ucI2cAddr, uchar ucRegAddr, uchar ucSize, uchar* u
         us_delay(100);        
         char temp = I2Cgetbyte();
         us_delay(100);
-        PORTA = 0x44;
         I2CStop();
         
 //        *arr_ptr = I2Cgetbyte();
