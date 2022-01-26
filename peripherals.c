@@ -6,6 +6,8 @@
  * Modifications by Nicole Baldy, 11/2021
 **/
 #include <xc.h> // Generic header for XC16 Compiler
+#include "peripherals.h"
+
 #define SCALE 1200L // Found by experimentation (A Poor delay method.)
 // In the following, addr = 0 -> access Control, addr = 1 -> access Data
 #define BusyLCD() ReadLCD( 0) & 0x80 // D<7> = Busy Flag
@@ -176,7 +178,6 @@ char I2Cgetbyte(void)
         
     return (I2C1RCV);
 }
-
 
 void us_delay(int n)
 {

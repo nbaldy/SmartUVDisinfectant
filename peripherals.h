@@ -20,6 +20,8 @@ void setPortA(unsigned int display);
 void msDelay(unsigned int ms);
 unsigned int getButton(unsigned int mask);
 
+void us_delay(int n);
+
 // LCD
 void InitPMP(void);
 void InitLCD(void);
@@ -33,7 +35,6 @@ void I2CStart(void);
 void I2CStop(void);
 void I2Csendbyte(char data);
 char I2Cgetbyte(void);
-void us_delay(int n);
 
 #ifdef	__cplusplus
 }

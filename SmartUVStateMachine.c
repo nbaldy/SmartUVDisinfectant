@@ -3,6 +3,7 @@
 #include "SmartUVStateMachine.h"
 #include "peripherals.h"
 #include "AMG88.h" // IR Grid-eye
+#include "timer.h"
 
 #include   <stdio.h>
 #include   <stdlib.h>
@@ -218,6 +219,8 @@ void WaitForCycleClart(State* state)
         // NOTE(NEB): For now, consider "started" when button pressed.
         // Event: Start Cmd Recieved
         state->state_name = STATE_ACTIVE_CYCLE;
+        ConfigureLongTimer(5*60);
+        StartLongTimer();
         return;
     }
     
@@ -228,6 +231,7 @@ void WaitForCycleClart(State* state)
 void ActiveCycle(State* state)
 {
     Running(state); // Parent State
+
     if(0 == DOOR_PIN)
     {
         // Door opened during active cycle, fault
@@ -237,19 +241,28 @@ void ActiveCycle(State* state)
         return;
     }
 
-    if (getButton(BUTTON_READY_FOR_NEXT))
+    enum LongTimerStatus tmr_status = CheckTimerStatus();
+    if (STATUS_ERR == tmr_status)
     {
-        // NOTE(NEB): For now, consider "stopped" when button pressed.
-        // Event: EITHER Stop Cmd Recieved OR Timer Expired
+        LED_PIN = 0;
+        state->active_fault = FAULT_TIMER_ERROR;
+        SetFault(state);
+        return;
+    }
+
+    if ( (STATUS_DONE == tmr_status) || getButton(BUTTON_READY_FOR_NEXT) )
+    {
+        // NOTE(NEB): For now, consider "stopped" when button pressed or timer expired.
+        // Event: Stop Cmd Recieved
         state->state_name = STATE_WAIT_FOR_RELEASE;
         LED_PIN = 0;
         return;
     }
-    
+
     LED_PIN = 1;
     
-    // TODO(NEB): Wait for stop cmd from wireless OR timer complete
-    state->display |= 0x05;
+    // TODO(NEB): Wait for stop cmd from wireless
+    state->display = (GetSecondsElapsed() & 0x7f);
 }
 
 void WaitForRelease(State* state)
@@ -317,7 +330,10 @@ void printFaultState(FaultName fault_name)
             break;
         case FAULT_DOOR_OPEN:
             putsLCD("DOOR OPEN    ");
-            break; 
+            break;
+        case FAULT_TIMER_ERROR:
+            putsLCD("TIMER ERR    ");
+            break;
         default:
         case FAULT_UNKNOWN:
             putsLCD("Unknown Fault");

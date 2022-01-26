@@ -32,7 +32,8 @@ typedef enum FaultName
     FAULT_UNKNOWN,
     NO_FAULT,
     FAULT_ESTOP,
-    FAULT_DOOR_OPEN
+    FAULT_DOOR_OPEN,
+    FAULT_TIMER_ERROR
 } FaultName;
 
 // 8-character representation of state name for display
