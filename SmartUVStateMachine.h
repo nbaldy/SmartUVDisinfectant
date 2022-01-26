@@ -24,6 +24,7 @@ typedef enum StateName
     STATE_ACTIVE_CYCLE,
     STATE_WAIT_FOR_RELEASE,
     STATE_FAULT,
+    STATE_DOOR_OPENING,
     STATE_RUNNING // Parent State Only
 } StateName;
 
@@ -33,7 +34,8 @@ typedef enum FaultName
     NO_FAULT,
     FAULT_ESTOP,
     FAULT_DOOR_OPEN,
-    FAULT_TIMER_ERROR
+    FAULT_TIMER_ERROR,
+    FAULT_INVALID_STATE
 } FaultName;
 
 // 8-character representation of state name for display
@@ -64,6 +66,7 @@ State InitStateMachine();
 
 // Treat below functions as private.
 void Initialization(State* state);
+void OpenDoor(State* state);
 void WaitForObject(State* state);
 void VerifyChamberReady(State* state);
 void WaitForCycleClart(State* state);
@@ -83,7 +86,6 @@ enum Buttons
     BUTTON_FAULT = 0x0004, // S6 injects a fault (skip S5)
     BUTTON_CLEAR_FAULT = 0x0008 // S3 clears a fault.
 };
-
 
 #endif	/* SMART_UV_STATE_MACHINE_H */
 

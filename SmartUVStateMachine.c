@@ -4,6 +4,7 @@
 #include "peripherals.h"
 #include "AMG88.h" // IR Grid-eye
 #include "timer.h"
+#include "MG996R.h"
 
 #include   <stdio.h>
 #include   <stdlib.h>
@@ -22,6 +23,9 @@ StateNameStr getStateNameStr(enum StateName state_enumeration)
     {
         case STATE_INITIALIZATION:
            strcpy(str_repr.str, "INIT            ");
+           break;
+        case STATE_DOOR_OPENING:
+           strcpy(str_repr.str, "OPEN DOOR       ");
            break;
         case STATE_WAIT_FOR_OBJECT:
            strcpy(str_repr.str, "WAIT FOR OBJ    ");
@@ -61,6 +65,7 @@ struct State InitStateMachine()
     InitPMP();
     InitLCD();
     I2Cinit(157);
+    InitServo();
     
     // Use P97 = RG13 for door input
     DOOR_TRIS = 1;
@@ -120,11 +125,17 @@ void processCurrentState(State* current_state)
             Fault(current_state);
             break;
         }
+        case STATE_DOOR_OPENING:
+        {
+            OpenDoor(current_state);
+            break;
+        }
         case STATE_UNKNOWN:
         default:
         {
             // UNSUPPORTED CHILD STATE
             SetFault(current_state);
+            current_state->active_fault = FAULT_INVALID_STATE;
             return;
         }
     }
@@ -143,7 +154,7 @@ void Initialization(State* state)
     {
         // NOTE(NEB): For now, consider "initialized" when button pressed.
         // Event: Init Complete
-        state->state_name = STATE_WAIT_FOR_OBJECT;
+        state->state_name = STATE_DOOR_OPENING;
         // Clear any initialization faults
         state->active_fault = NO_FAULT;
         return;
@@ -162,9 +173,29 @@ void WaitForObject(State* state)
         state->state_name = STATE_VERIFY_CHAMBER_READY;
         return;
     }
-    
+
     // TODO(NEB): Wait for door closed sense
     state->display |= 0x02;
+}
+
+void OpenDoor(State* state)
+{
+    Running(state); // Parent State
+
+    // Open door
+    ServoGoToPosition(10, 400);
+
+    if (0 == DOOR_PIN) // P97 = RG13 should be used for door input
+    {
+        // Event: Door Opened
+        SetCursorAtLine(2);
+        state->state_name = STATE_WAIT_FOR_OBJECT;
+        ServoGoToPosition(170, 400);
+        return;
+    }
+
+    // TODO(NEB): Wait for door closed sense
+    state->display |= 0x82;
 }
 
 void VerifyChamberReady(State* state)
@@ -269,10 +300,11 @@ void WaitForRelease(State* state)
 {
     // TODO(NEB): Unlock when get command from UI.
     Running(state); // Parent State
-    if (0 == DOOR_PIN) // Move to next state when door opens/pull down
+
+    if (getButton(BUTTON_READY_FOR_NEXT)) // Move to next state when get user command
     {
         // Event: Unlock Cmd Recieved
-        state->state_name = STATE_WAIT_FOR_OBJECT;
+        state->state_name = STATE_DOOR_OPENING;
         return;
     }
     
@@ -333,6 +365,9 @@ void printFaultState(FaultName fault_name)
             break;
         case FAULT_TIMER_ERROR:
             putsLCD("TIMER ERR    ");
+            break;
+        case FAULT_INVALID_STATE:
+            putsLCD("INVALID STATE");
             break;
         default:
         case FAULT_UNKNOWN:

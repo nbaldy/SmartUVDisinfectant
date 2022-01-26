@@ -9,7 +9,7 @@
 #include "mcc_generated_files/system.h"
 #include "peripherals.h"
 #include "SmartUVStateMachine.h"
-
+#include "MG996R.h"
 /*
     Main application
  */
@@ -18,7 +18,7 @@ int main(void) {
     SYSTEM_Initialize();
 
     State current_state = InitStateMachine();
-
+    InitServo();
     
     //endless loop
     while (1) {
