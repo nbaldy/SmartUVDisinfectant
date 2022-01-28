@@ -5,7 +5,7 @@
 #include "AMG88.h" // IR Grid-eye
 #include "timer.h"
 #include "MG996R.h"
-
+#include "HCSR04.h"
 #include   <stdio.h>
 #include   <stdlib.h>
 #include   <string.h>
@@ -49,7 +49,7 @@ StateNameStr getStateNameStr(enum StateName state_enumeration)
            strcpy(str_repr.str, "UNKNOWN STATE   ");
            break;
     }
-    
+
     return str_repr;
 }
 
@@ -64,9 +64,10 @@ struct State InitStateMachine()
     msDelay(100); // Give time to start up
     InitPMP();
     InitLCD();
+    InitUSensor();
     I2Cinit(157);
     InitServo();
-    
+
     // Use P97 = RG13 for door input
     DOOR_TRIS = 1;
     // Use P95 = RG14 for LED output
@@ -139,7 +140,7 @@ void processCurrentState(State* current_state)
             return;
         }
     }
-    
+
     // TODO(NEB): Temporary way of showing state.
     setPortA(current_state->display);
 }
@@ -159,7 +160,7 @@ void Initialization(State* state)
         state->active_fault = NO_FAULT;
         return;
     }
-    
+
     // TODO(NEB): Initialize all sensors.
     state->display |= 0x01;
 }
@@ -188,9 +189,8 @@ void OpenDoor(State* state)
     if (0 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
         // Event: Door Opened
-        SetCursorAtLine(2);
         state->state_name = STATE_WAIT_FOR_OBJECT;
-        ServoGoToPosition(170, 400);
+        ServoGoToPosition(170, 1000);
         return;
     }
 
@@ -203,12 +203,12 @@ void VerifyChamberReady(State* state)
     bReadTempFromGridEYE();
     msDelay(10); // Give time to Read Everything
     Running(state); // Parent State
-    
+
     short max_pxl = maxPixel(); // 256 * Temp_In_C
-    
+
     SetCursorAtLine(2);
     char str[16];
-    double max_C = (double) max_pxl / (256); 
+    double max_C = (double) max_pxl / (256);
     int num_pxls_body_temp = numPixelsInRange(27*256, 40*256); // between 27 and 40 C for now
 
     sprintf(str, "%4.2f C; r=%d", max_C, num_pxls_body_temp);
@@ -228,7 +228,7 @@ void VerifyChamberReady(State* state)
         state->state_name = STATE_WAIT_FOR_CYCLE_START;
         return;
     }
-    
+
     // TODO(NEB): Wait for door closed sense
     state->display |= 0x03;
 }
@@ -245,6 +245,15 @@ void WaitForCycleClart(State* state)
         return;
     }
 
+    // Debugging
+    double dist = GetDistanceCm();
+    SetCursorAtLine(2);
+    char str[16];
+
+    sprintf(str, "%4.2f cm; ", dist);
+    putsLCD(str);
+
+
     if (getButton(BUTTON_READY_FOR_NEXT))
     {
         // NOTE(NEB): For now, consider "started" when button pressed.
@@ -254,7 +263,7 @@ void WaitForCycleClart(State* state)
         StartLongTimer();
         return;
     }
-    
+
     // TODO(NEB): Wait for start cmd from wireless
     state->display |= 0x04;
 }
@@ -291,7 +300,7 @@ void ActiveCycle(State* state)
     }
 
     LED_PIN = 1;
-    
+
     // TODO(NEB): Wait for stop cmd from wireless
     state->display = (GetSecondsElapsed() & 0x7f);
 }
@@ -307,7 +316,7 @@ void WaitForRelease(State* state)
         state->state_name = STATE_DOOR_OPENING;
         return;
     }
-    
+
     // TODO(NEB): Wait for unlock cmd
     state->display |= 0x06;
 }
