@@ -24,12 +24,14 @@ double GetDistanceCm(void)
     us_delay(10);
     TRIG_PIN = 0;
     
-    int n = 0;
+    unsigned int n = 0;
+
     // TODO: Ensure a non-timeout condition and make this timer configuration safe. 
-    while(!ECHO_PIN && n < 10000){ Nop(); n++; }
+    while(!ECHO_PIN && n < 65535){ Nop(); n++; }
     
     TMR1 = 0;
-    while(ECHO_PIN && n < 10000){ Nop();n++; }
+    n = 0;
+    while(ECHO_PIN && n < 65535){ Nop(); n++; }
     
     return TMR1 / 58;
 }

@@ -18,7 +18,6 @@ int main(void) {
     SYSTEM_Initialize();
 
     State current_state = InitStateMachine();
-    InitServo();
     
     //endless loop
     while (1) {
