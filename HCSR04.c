@@ -33,5 +33,5 @@ double GetDistanceCm(void)
     n = 0;
     while(ECHO_PIN && n < 65535){ Nop(); n++; }
     
-    return TMR1 / 58;
+    return (double)TMR1 / (2*58); // us / 58
 }

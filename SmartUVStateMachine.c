@@ -9,11 +9,14 @@
 #include   <stdio.h>
 #include   <stdlib.h>
 #include   <string.h>
+#include "bluetooth.h"
 
 #define LED_PIN PORTGbits.RG14
 #define LED_TRIS TRISGbits.TRISG14
 #define DOOR_PIN PORTGbits.RG13
 #define DOOR_TRIS TRISGbits.TRISG13
+
+#define MAX_DIST 25 // Should be 61 but reduced for cardboard demo
 
 StateNameStr getStateNameStr(enum StateName state_enumeration)
 {
@@ -32,9 +35,6 @@ StateNameStr getStateNameStr(enum StateName state_enumeration)
            break;
         case STATE_VERIFY_CHAMBER_READY:
            strcpy(str_repr.str, "CHECK READY     ");
-           break;
-        case STATE_WAIT_FOR_CYCLE_START:
-           strcpy(str_repr.str, "WAIT FOR START  ");
            break;
         case STATE_ACTIVE_CYCLE:
            strcpy(str_repr.str, "CYCLE ACTIVE    ");
@@ -104,11 +104,6 @@ void processCurrentState(State* current_state)
         case STATE_VERIFY_CHAMBER_READY:
         {
             VerifyChamberReady(current_state);
-            break;
-        }
-        case STATE_WAIT_FOR_CYCLE_START:
-        {
-            WaitForCycleClart(current_state);
             break;
         }
         case STATE_ACTIVE_CYCLE:
@@ -184,13 +179,16 @@ void OpenDoor(State* state)
     Running(state); // Parent State
 
     // Open door
-    ServoGoToPosition(10, 400);
+    ServoGoToPosition(0, 400);
 
     if (0 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
+        // Delay extra 100 ms to ensure door opens all the way 
+        msDelay(500);
+
         // Event: Door Opened
         state->state_name = STATE_WAIT_FOR_OBJECT;
-        ServoGoToPosition(170, 1000);
+        ServoGoToPosition(180, 1000);
         return;
     }
 
@@ -204,16 +202,45 @@ void VerifyChamberReady(State* state)
     msDelay(10); // Give time to Read Everything
     Running(state); // Parent State
 
-    short max_pxl = maxPixel(); // 256 * Temp_In_C
+    int num_pxls_body_temp = numPixelsInRange(27*256, 40*256); // between 27 and 40 C for now
+    int is_person_detected = (num_pxls_body_temp >= 4); /* Experimental: 4+ pixels is a very good indicator of a person */
+
+    double dist_cm = GetDistanceCm();
+    int is_open_door_detected = (dist_cm > MAX_DIST); /* about 2 ft */
 
     SetCursorAtLine(2);
-    char str[16];
-    double max_C = (double) max_pxl / (256);
-    int num_pxls_body_temp = numPixelsInRange(27*256, 40*256); // between 27 and 40 C for now
+    char clear_str[16] = "              ";
+    putsLCD(clear_str);
+    
+    int command = getCommand();
+    int is_start = (command == 1);
+    if (is_start && (!is_person_detected && !is_open_door_detected))
+    {
+        // Event: Chamber Ready and got UI command [No Person AND Door closed AND UI Cmd]
+        state->state_name = STATE_ACTIVE_CYCLE;
+        ConfigureLongTimer(5*60);
+        StartLongTimer();
+        return;
+    }
 
-    sprintf(str, "%4.2f C; r=%d", max_C, num_pxls_body_temp);
+    // Something is not ready, print warnings
+    // TODO[NEB]: Send to UI
+    char info_str[12];
+    char err_str[16] = "";
+    SetCursorAtLine(2);
+    sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
+    if (is_person_detected)
+    {
+        strcat(err_str, "!!");
+    }
+    // String is [!!]? px cm [!!]?
+    strcat(err_str, info_str);
 
-    putsLCD(str);
+    if (is_open_door_detected)
+    {
+        strcat(err_str, "!!");
+    }
+    putsLCD(err_str);
 
     if(0 == DOOR_PIN)
     {
@@ -221,51 +248,9 @@ void VerifyChamberReady(State* state)
         state->state_name = STATE_WAIT_FOR_OBJECT;
         return;
     }
-    if (getButton(BUTTON_READY_FOR_NEXT) || 3 < num_pxls_body_temp) // More than 3 pixels in this range
-    {
-        // NOTE(NEB): For now, consider "ready" when button pressed.
-        // Event: Chamber Ready
-        state->state_name = STATE_WAIT_FOR_CYCLE_START;
-        return;
-    }
-
+ 
     // TODO(NEB): Wait for door closed sense
     state->display |= 0x03;
-}
-
-void WaitForCycleClart(State* state)
-{
-    Running(state); // Parent State
-
-    if(0 == DOOR_PIN)
-    {
-        // Door opened during wait for cycle, fault
-        state->active_fault = FAULT_DOOR_OPEN;
-        SetFault(state);
-        return;
-    }
-
-    // Debugging
-    double dist = GetDistanceCm();
-    SetCursorAtLine(2);
-    char str[16];
-
-    sprintf(str, "%4.2f cm; ", dist);
-    putsLCD(str);
-
-
-    if (getButton(BUTTON_READY_FOR_NEXT))
-    {
-        // NOTE(NEB): For now, consider "started" when button pressed.
-        // Event: Start Cmd Recieved
-        state->state_name = STATE_ACTIVE_CYCLE;
-        ConfigureLongTimer(5*60);
-        StartLongTimer();
-        return;
-    }
-
-    // TODO(NEB): Wait for start cmd from wireless
-    state->display |= 0x04;
 }
 
 void ActiveCycle(State* state)
