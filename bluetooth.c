@@ -18,6 +18,11 @@
 #define NEWLINE 0x0A
 #define NULL 0x00
 
+#define CHAR_A 0x41
+#define CHAR_Z 0x5a
+#define CHAR_a 0x61
+#define CHAR_z 0x7a
+
 // UART 
 void InitU2(void)
 {
@@ -66,9 +71,10 @@ int checkCommand(char c)
     }
     else
     {
-        return 0;
+        return c;
     }
 }
+
 int getCommand ()
 {
     int command = -1;
@@ -77,7 +83,8 @@ int getCommand ()
     char str[3];
     int size = 0;
     
-    while(command == -1)
+    TMR1 = 0;
+    while(command == -1 && TMR1 < 1000)
     {
         char temp;
         temp = getU2();
@@ -86,6 +93,8 @@ int getCommand ()
         // Checks if char is asterisk
         if (temp == ASTERISK)
         {
+            U2STAbits.OERR = 0;
+            return 1;
             isCommand = !isCommand;     //sets command flag
             
             if (isCommand)
@@ -102,6 +111,8 @@ int getCommand ()
                 msDelay(50);
                 U2STAbits.OERR = 0;
                 command = checkCommand(str[0]);
+                SetCursorAtLine(2);
+                putsLCD(str);
             }
         }
         else if (isCommand && temp != NEWLINE)  // Middle of a command
@@ -115,3 +126,7 @@ int getCommand ()
     return command;
 }
 
+int isLetter(char c)
+{
+    return ((c >= CHAR_A && c <= CHAR_Z) || (c >= CHAR_a && c <= CHAR_z));
+}

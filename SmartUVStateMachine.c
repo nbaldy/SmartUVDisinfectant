@@ -16,6 +16,9 @@
 #define DOOR_PIN PORTGbits.RG13
 #define DOOR_TRIS TRISGbits.TRISG13
 
+#define LED_ON 0
+#define LED_OFF 1
+
 #define MAX_DIST 25 // Should be 61 but reduced for cardboard demo
 
 StateNameStr getStateNameStr(enum StateName state_enumeration)
@@ -67,12 +70,13 @@ struct State InitStateMachine()
     InitUSensor();
     I2Cinit(157);
     InitServo();
+    InitU2();
 
     // Use P97 = RG13 for door input
     DOOR_TRIS = 1;
     // Use P95 = RG14 for LED output
     LED_TRIS = 0;
-    LED_PIN = 0;
+    LED_PIN = LED_OFF;
 
     new_sm.active_fault = FAULT_UNKNOWN;
     new_sm.state_name = STATE_INITIALIZATION;
@@ -146,7 +150,8 @@ void processCurrentState(State* current_state)
 void Initialization(State* state)
 {
     Running(state); // Parent State
-    if (getButton(BUTTON_READY_FOR_NEXT))
+    int command = getCommand();
+    if (getButton(BUTTON_READY_FOR_NEXT) || command)
     {
         // NOTE(NEB): For now, consider "initialized" when button pressed.
         // Event: Init Complete
@@ -209,11 +214,15 @@ void VerifyChamberReady(State* state)
     int is_open_door_detected = (dist_cm > MAX_DIST); /* about 2 ft */
 
     SetCursorAtLine(2);
-    char clear_str[16] = "              ";
-    putsLCD(clear_str);
     
     int command = getCommand();
+//    int command = getButton(BUTTON_READY_FOR_NEXT)? 1: 0;
     int is_start = (command == 1);
+    
+    char str[16];
+    sprintf(str, "got%c %d, isS%d", (char)command, command, is_start);
+//    putsLCD(str);
+    msDelay(500);
     if (is_start && (!is_person_detected && !is_open_door_detected))
     {
         // Event: Chamber Ready and got UI command [No Person AND Door closed AND UI Cmd]
@@ -260,7 +269,7 @@ void ActiveCycle(State* state)
     if(0 == DOOR_PIN)
     {
         // Door opened during active cycle, fault
-        LED_PIN = 0;
+        LED_PIN = LED_OFF;
         state->active_fault = FAULT_DOOR_OPEN;
         SetFault(state);
         return;
@@ -269,22 +278,23 @@ void ActiveCycle(State* state)
     enum LongTimerStatus tmr_status = CheckTimerStatus();
     if (STATUS_ERR == tmr_status)
     {
-        LED_PIN = 0;
+        LED_PIN = LED_OFF;
         state->active_fault = FAULT_TIMER_ERROR;
         SetFault(state);
         return;
     }
+    int command = getCommand();
 
-    if ( (STATUS_DONE == tmr_status) || getButton(BUTTON_READY_FOR_NEXT) )
+    if ( (STATUS_DONE == tmr_status) || command == 1)
     {
         // NOTE(NEB): For now, consider "stopped" when button pressed or timer expired.
         // Event: Stop Cmd Recieved
         state->state_name = STATE_WAIT_FOR_RELEASE;
-        LED_PIN = 0;
+        LED_PIN = LED_OFF;
         return;
     }
 
-    LED_PIN = 1;
+    LED_PIN = LED_ON;
 
     // TODO(NEB): Wait for stop cmd from wireless
     state->display = (GetSecondsElapsed() & 0x7f);
@@ -294,8 +304,9 @@ void WaitForRelease(State* state)
 {
     // TODO(NEB): Unlock when get command from UI.
     Running(state); // Parent State
+    int command = getCommand();
 
-    if (getButton(BUTTON_READY_FOR_NEXT)) // Move to next state when get user command
+    if (getButton(BUTTON_READY_FOR_NEXT) || command) // Move to next state when get user command
     {
         // Event: Unlock Cmd Recieved
         state->state_name = STATE_DOOR_OPENING;
@@ -308,7 +319,8 @@ void WaitForRelease(State* state)
 
 void Fault(State* state)
 {
-    if (getButton(BUTTON_CLEAR_FAULT))
+    int command = getCommand();
+    if (getButton(BUTTON_CLEAR_FAULT) || command)
     {
         // NOTE(NEB): For now, consider "fault cleared" when button pressed.
         // Event: Fault Cleared
@@ -338,7 +350,7 @@ void SetFault(State *state)
 {
     state->state_name = STATE_FAULT;
     state->display = 0x3F; // Unprocessed Fault
-    LED_PIN = 0; // Turn LEDs off
+    LED_PIN = LED_OFF;
     setPortA(state->display);
 }
 

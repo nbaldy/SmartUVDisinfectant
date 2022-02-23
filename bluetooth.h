@@ -20,6 +20,8 @@ extern "C" {
     // Bluetooth Communication
     int checkCommand (char c);
     int getCommand ();
+    int isLetter(char c);
+
 
 #ifdef	__cplusplus
 }
