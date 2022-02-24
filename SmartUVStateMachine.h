@@ -56,6 +56,7 @@ typedef struct State
     unsigned char display;
     enum FaultName active_fault;
     bool cycle_ok;
+    int seconds_remaining;
     // TODO(NEB): Store last known sensor status, Estop status, etc here.
 } State;
 

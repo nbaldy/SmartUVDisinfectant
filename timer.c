@@ -65,3 +65,8 @@ int GetSecondsElapsed(void)
 {
     return _num_seconds_detected;
 }
+
+int GetSecondsRemaining(void)
+{
+    return _num_seconds_needed - _num_seconds_detected;
+}

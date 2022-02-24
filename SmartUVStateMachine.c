@@ -187,7 +187,7 @@ void OpenDoor(State* state)
 
     if (0 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
-        // Delay extra 100 ms to ensure door opens all the way 
+        // Delay extra 100 ms to ensure door opens all the way
         msDelay(500);
 
         // Event: Door Opened
@@ -290,6 +290,16 @@ void ActiveCycle(State* state)
         return;
     }
 
+    int seconds_remaining = GetSecondsRemaining();
+    if (state->seconds_remaining != seconds_remaining &&
+            (seconds_remaining % 30 == 0))
+    {
+        int minutes = seconds_remaining / 60;
+        char str[17];
+        sprintf(str, "%dm %ds remaining", minutes, seconds_remaining - minutes*60);
+        sendToU2(str, 17);
+        state->seconds_remaining = seconds_remaining;
+    }
     LED_PIN = LED_ON;
 
     // TODO(NEB): Wait for stop cmd from wireless
@@ -301,7 +311,7 @@ void WaitForRelease(State* state)
     // TODO(NEB): Unlock when get command from UI.
     Running(state); // Parent State
 
-    if (getButton(BUTTON_READY_FOR_NEXT) || getCommand() == RELEASE_CMD) 
+    if (getButton(BUTTON_READY_FOR_NEXT) || getCommand() == RELEASE_CMD)
     {
         // Event: Unlock Cmd Recieved
         Transition(state, STATE_DOOR_OPENING);
