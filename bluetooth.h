@@ -19,15 +19,15 @@ extern "C" {
 
     // UART
     void InitU2(void);
-    char putU2(char c);
-    char getU2(void);
-    
+
     // Bluetooth Communication
     int checkCommand (char c);
     int getCommand(void);
     int isLetter(char c);
-    
+
     void resetU2(void);
+
+    void sendToU2(char str[], unsigned int size);
 
 #ifdef	__cplusplus
 }

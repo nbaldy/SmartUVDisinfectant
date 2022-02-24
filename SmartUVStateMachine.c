@@ -228,17 +228,17 @@ void VerifyChamberReady(State* state)
     char info_str[12];
     char err_str[16] = "";
     SetCursorAtLine(2);
-        sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
+    sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
     if (is_person_detected)
     {
-        strcat(err_str, "!!");
+        sendToU2("Person Detected!", 17);
     }
     // String is [!!]? px cm [!!]?
     strcat(err_str, info_str);
 
     if (is_open_door_detected)
     {
-        strcat(err_str, "!!");
+        sendToU2("Door Open!", 17);
     }
     putsLCD(err_str);
 
@@ -380,5 +380,10 @@ void Transition(State *state, StateName new_state)
         // Clear U2 Commands
         resetU2();
 
+        // Send new name to the app
+        StateNameStr state_str = getStateNameStr(new_state);
+        sendToU2(state_str.str, 17);
+
+        // Next state on the following tick
         state->state_name = new_state;
 }

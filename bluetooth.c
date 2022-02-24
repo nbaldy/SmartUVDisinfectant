@@ -141,3 +141,17 @@ int isLetter(char c)
 {
     return ((c >= CHAR_A && c <= CHAR_Z) || (c >= CHAR_a && c <= CHAR_z));
 }
+
+void sendToU2(char str[], unsigned int size)
+{
+    unsigned int i;
+    for (i=0; i < size; i++)
+    {
+        putU2(str[i]);
+        msDelay(10);
+    }
+    putU2(CARRIAGE);
+    msDelay(10);
+    putU2(NEWLINE);
+    msDelay(10);
+}
