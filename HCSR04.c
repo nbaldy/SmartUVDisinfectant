@@ -4,9 +4,10 @@
  * Comments: Control a servo lock (Implementation)
  */
 
+#include "HCSR04.h"
+
 #include <xc.h> // include processor files - each processor file is guarded.  
 #include "peripherals.h"
-#include "HCSR04.h"
 
 void InitUSensor(void)
 {
@@ -23,15 +24,15 @@ double GetDistanceCm(void)
     TRIG_PIN = 1;
     us_delay(10);
     TRIG_PIN = 0;
-    
+
     unsigned int n = 0;
 
     // TODO: Ensure a non-timeout condition and make this timer configuration safe. 
     while(!ECHO_PIN && n < 65535){ Nop(); n++; }
-    
+
     TMR1 = 0;
     n = 0;
     while(ECHO_PIN && n < 65535){ Nop(); n++; }
-    
+
     return (double)TMR1 / (2*58); // us / 58
 }

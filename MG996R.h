@@ -29,6 +29,5 @@ void InitServo();
 // Command the servo to an angular (in degrees) position
 void ServoGoToPosition(int position, int duration_ms);
 
-
 #endif	/* MG996R_H */
 

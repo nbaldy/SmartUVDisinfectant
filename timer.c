@@ -33,7 +33,7 @@ enum LongTimerStatus CheckTimerStatus(void)
         _status = STATUS_ERR;
         return _status;        
     }
-    
+
     if (TMR1 > TMR1_1SEC_MAX_PRESCALE)
     {
         // Start next cycle
@@ -52,12 +52,12 @@ enum LongTimerStatus CheckTimerStatus(void)
         _num_seconds_detected++;
         _status = STATUS_RUNNING; // Rollover processed
     }
-    
+
     if (_num_seconds_detected >= _num_seconds_needed)
     {
         _status = STATUS_DONE;
     }
-    
+
     return _status;
 }
 

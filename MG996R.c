@@ -22,7 +22,7 @@ void ServoGoToPosition(int position, int duration_ms)
         // ERROR: Servo commanded to invalid angle, cap. 
         position = SERVO_HI_ANGLE_DEG;        
     }
-    
+
     int hi_duration_us = (SERVO_LO_DC_US + 
         SERVO_DC_SLOPE * (position - SERVO_LO_ANGLE_DEG));
     int lo_duration_us = SERVO_PWM_PERIOD_US - hi_duration_us;

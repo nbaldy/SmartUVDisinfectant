@@ -33,7 +33,6 @@ typedef unsigned char uchar;
 // 128 temperature registers, 64 Hi, 64 lo
 #define GRIDEYE_REGSZ_TMP (0x80) /* size of temperature resister */
 
-
 /* Grid-EYE's number of pixels */
 #define SNR_SZ_X (8)
 #define SNR_SZ_Y (8)

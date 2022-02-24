@@ -5,7 +5,6 @@
  * Created on February 21, 2022, 5:21 PM
  */
 
-
 #include <xc.h>
 #include "bluetooth.h"
 #include "peripherals.h"
@@ -34,7 +33,7 @@ void InitU2(void)
     U2STA = 0x0400; // See data sheet, pg. 150, Transmit Enable
     // Following lines pertain Hardware handshaking
     TRISFbits.TRISF13 = 1; // enable RTS , output
-    
+
     RTS = 1; // default status , not ready to send
     FLUSH_BUFFER();
 }
@@ -85,14 +84,13 @@ int checkCommand(char c)
 int getCommand ()
 {
     int command = NO_CMD;
-    
+
     int isCommand = 0;
     char str[3];
     int size = 0;
-    
+
     unsigned int max_letters = 5; // Includes asterisks
-    
-    
+
     while(command == NO_CMD && max_letters-- > 0)
     {
         char temp;
@@ -103,7 +101,7 @@ int getCommand ()
         if (temp == ASTERISK)
         {
             isCommand = !isCommand;     //sets command flag
-            
+
             if (isCommand)
             {
                 // Start of a command

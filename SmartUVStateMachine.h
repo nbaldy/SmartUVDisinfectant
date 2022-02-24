@@ -45,7 +45,6 @@ typedef struct StateNameStr
 
 StateNameStr getStateNameStr(enum StateName state_enumeration);
 
-
 typedef struct State
 {
     // Parent state or unknown if None. Parent executes first.
@@ -61,7 +60,6 @@ typedef struct State
 void processCurrentState(State* current_state);
 
 State InitStateMachine();
-
 
 // Treat below functions as private.
 void Initialization(State* state);
@@ -82,7 +80,6 @@ void printFaultState(FaultName fault_name);
 // Clear LCD 2nd Row
 // Clear U2 Commands
 void Transition(State *state, StateName new_state);
-
 
 // TODO(NEB): Temporary for state proof.
 enum Buttons

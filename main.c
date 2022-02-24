@@ -18,13 +18,12 @@ int main(void) {
     SYSTEM_Initialize();
 
     State current_state = InitStateMachine();
-    
+
     //endless loop
     while (1) {
         msDelay(250); // delay approximately 0.25 second
         initButtons(0x000F); // All buttons as inputs: 0xF
-        
-    
+
         processCurrentState(&current_state); // Tick State Machine
     }
 }

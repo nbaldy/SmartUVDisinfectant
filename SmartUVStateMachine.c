@@ -56,7 +56,6 @@ StateNameStr getStateNameStr(enum StateName state_enumeration)
     return str_repr;
 }
 
-
 struct State InitStateMachine()
 {
     State new_sm;
@@ -145,12 +144,11 @@ void processCurrentState(State* current_state)
 
 // "Private"
 
-
 void Initialization(State* state)
 {
     // Ensure that we do not move forward on a power cycle due to power to buttons weird
     Running(state); // Parent State
-    
+
     InitU2();
 
     if (getButton(BUTTON_READY_FOR_NEXT) || (getCommand() == START_CMD))
@@ -250,7 +248,7 @@ void VerifyChamberReady(State* state)
         Transition(state, STATE_WAIT_FOR_OBJECT);
         return;
     }
- 
+
     // TODO(NEB): Wait for door closed sense
     state->display |= 0x03;
 }
@@ -378,9 +376,9 @@ void Transition(State *state, StateName new_state)
         // CLEAR any bottom text
         SetCursorAtLine(2);
         putsLCD("                 ");
-        
+
         // Clear U2 Commands
         resetU2();
-        
+
         state->state_name = new_state;
 }
