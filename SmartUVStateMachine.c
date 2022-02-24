@@ -153,12 +153,10 @@ void Initialization(State* state)
     
     InitU2();
 
-    // CLEAR any bottom text
     if (getButton(BUTTON_READY_FOR_NEXT) || (getCommand() == START_CMD))
     {
         // NOTE(NEB): For now, consider "initialized" when button pressed.
-        // Event: Init Complete
-        state->state_name = STATE_DOOR_OPENING;
+        Transition(state, STATE_DOOR_OPENING);
         // Clear any initialization faults
         state->active_fault = NO_FAULT;
         return;
@@ -174,7 +172,7 @@ void WaitForObject(State* state)
     if (1 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
         // Event: Door Closed
-        state->state_name = STATE_VERIFY_CHAMBER_READY;
+        Transition(state, STATE_VERIFY_CHAMBER_READY);
         return;
     }
 
@@ -195,7 +193,7 @@ void OpenDoor(State* state)
         msDelay(500);
 
         // Event: Door Opened
-        state->state_name = STATE_WAIT_FOR_OBJECT;
+        Transition(state, STATE_WAIT_FOR_OBJECT);
         ServoGoToPosition(180, 1000);
         return;
     }
@@ -221,10 +219,7 @@ void VerifyChamberReady(State* state)
             && (!is_person_detected && !is_open_door_detected))
     {
         // Event: Chamber Ready and got UI command [No Person AND Door closed AND UI Cmd]
-        state->state_name = STATE_ACTIVE_CYCLE;
-        // CLEAR any bottom text
-        SetCursorAtLine(2);
-        putsLCD("                 ");
+        Transition(state, STATE_ACTIVE_CYCLE);
         ConfigureLongTimer(5*60);
         StartLongTimer();
         return;
@@ -252,7 +247,7 @@ void VerifyChamberReady(State* state)
     if(0 == DOOR_PIN)
     {
         // Door opened verification, wait for closed again
-        state->state_name = STATE_WAIT_FOR_OBJECT;
+        Transition(state, STATE_WAIT_FOR_OBJECT);
         return;
     }
  
@@ -286,7 +281,7 @@ void ActiveCycle(State* state)
     {
         // NOTE(NEB): For now, consider "stopped" when button pressed or timer expired.
         // Event: Stop Cmd Recieved
-        state->state_name = STATE_WAIT_FOR_RELEASE;
+        Transition(state, STATE_WAIT_FOR_RELEASE);
         LED_PIN = LED_OFF;
         return;
     }
@@ -305,7 +300,7 @@ void WaitForRelease(State* state)
     if (getButton(BUTTON_READY_FOR_NEXT) || getCommand() == RELEASE_CMD) 
     {
         // Event: Unlock Cmd Recieved
-        state->state_name = STATE_DOOR_OPENING;
+        Transition(state, STATE_DOOR_OPENING);
         return;
     }
 
@@ -320,7 +315,7 @@ void Fault(State* state)
         // NOTE(NEB): For now, consider "fault cleared" when button pressed.
         // Event: Fault Cleared
         state->active_fault = NO_FAULT;
-        state->state_name = STATE_INITIALIZATION;
+        Transition(state, STATE_INITIALIZATION);
         return;
     }
 
@@ -343,7 +338,7 @@ void Running(State* state)
 
 void SetFault(State *state)
 {
-    state->state_name = STATE_FAULT;
+    Transition(state, STATE_FAULT);
     state->display = 0x3F; // Unprocessed Fault
     LED_PIN = LED_OFF;
     setPortA(state->display);
@@ -375,4 +370,17 @@ void printFaultState(FaultName fault_name)
             putsLCD("Unknown Fault");
             break;
     }
+}
+
+// Perform standard transition actions
+void Transition(State *state, StateName new_state)
+{
+        // CLEAR any bottom text
+        SetCursorAtLine(2);
+        putsLCD("                 ");
+        
+        // Clear U2 Commands
+        resetU2();
+        
+        state->state_name = new_state;
 }

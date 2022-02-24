@@ -78,6 +78,12 @@ void Running(State* state);
 void SetFault(State* state); // TODO(NEB): Fault Codes, for now just set state.
 void printFaultState(FaultName fault_name);
 
+// Perform standard state transition actions
+// Clear LCD 2nd Row
+// Clear U2 Commands
+void Transition(State *state, StateName new_state);
+
+
 // TODO(NEB): Temporary for state proof.
 enum Buttons
 {
