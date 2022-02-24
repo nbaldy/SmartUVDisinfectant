@@ -70,7 +70,6 @@ struct State InitStateMachine()
     InitUSensor();
     I2Cinit(157);
     InitServo();
-    InitU2();
 
     // Use P97 = RG13 for door input
     DOOR_TRIS = 1;
@@ -149,14 +148,13 @@ void processCurrentState(State* current_state)
 
 void Initialization(State* state)
 {
+    // Ensure that we do not move forward on a power cycle due to power to buttons weird
     Running(state); // Parent State
+    
+    InitU2();
 
     // CLEAR any bottom text
-    SetCursorAtLine(2);
-    putsLCD("                 ");
-
-    int command = getCommand();
-    if (getButton(BUTTON_READY_FOR_NEXT) || command)
+    if (getButton(BUTTON_READY_FOR_NEXT) || (getCommand() == START_CMD))
     {
         // NOTE(NEB): For now, consider "initialized" when button pressed.
         // Event: Init Complete
@@ -217,19 +215,16 @@ void VerifyChamberReady(State* state)
 
     double dist_cm = GetDistanceCm();
     int is_open_door_detected = (dist_cm > MAX_DIST); /* about 2 ft */
-    
-    int command = getCommand();
-    int is_start = (command == 1);
-
-    // CLEAR any bottom text
-    SetCursorAtLine(2);
-    putsLCD("                 ");
 
     msDelay(30);
-    if (is_start && (!is_person_detected && !is_open_door_detected))
+    if (((getCommand() == START_CMD) || (getButton(BUTTON_READY_FOR_NEXT)))
+            && (!is_person_detected && !is_open_door_detected))
     {
         // Event: Chamber Ready and got UI command [No Person AND Door closed AND UI Cmd]
         state->state_name = STATE_ACTIVE_CYCLE;
+        // CLEAR any bottom text
+        SetCursorAtLine(2);
+        putsLCD("                 ");
         ConfigureLongTimer(5*60);
         StartLongTimer();
         return;
@@ -286,9 +281,8 @@ void ActiveCycle(State* state)
         SetFault(state);
         return;
     }
-    int command = getCommand();
 
-    if ( (STATUS_DONE == tmr_status) || command == 1)
+    if ( (STATUS_DONE == tmr_status) || getCommand() == END_CMD)
     {
         // NOTE(NEB): For now, consider "stopped" when button pressed or timer expired.
         // Event: Stop Cmd Recieved
@@ -307,9 +301,8 @@ void WaitForRelease(State* state)
 {
     // TODO(NEB): Unlock when get command from UI.
     Running(state); // Parent State
-    int command = getCommand();
 
-    if (getButton(BUTTON_READY_FOR_NEXT) || command) // Move to next state when get user command
+    if (getButton(BUTTON_READY_FOR_NEXT) || getCommand() == RELEASE_CMD) 
     {
         // Event: Unlock Cmd Recieved
         state->state_name = STATE_DOOR_OPENING;
@@ -322,8 +315,7 @@ void WaitForRelease(State* state)
 
 void Fault(State* state)
 {
-    int command = getCommand();
-    if (getButton(BUTTON_CLEAR_FAULT) || command)
+    if (getButton(BUTTON_CLEAR_FAULT) || getCommand() == RELEASE_CMD)
     {
         // NOTE(NEB): For now, consider "fault cleared" when button pressed.
         // Event: Fault Cleared
@@ -364,7 +356,7 @@ void printFaultState(FaultName fault_name)
     switch(fault_name)
     {
         case NO_FAULT:
-//            putsLCD("--           ");
+            // Nothing to do here
             break;
         case FAULT_ESTOP:
             putsLCD("ESTOPPED     ");

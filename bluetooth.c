@@ -23,6 +23,8 @@
 #define CHAR_a 0x61
 #define CHAR_z 0x7a
 
+#define FLUSH_BUFFER() U2STAbits.OERR = 0
+
 // UART 
 void InitU2(void)
 {
@@ -32,7 +34,9 @@ void InitU2(void)
     U2STA = 0x0400; // See data sheet, pg. 150, Transmit Enable
     // Following lines pertain Hardware handshaking
     TRISFbits.TRISF13 = 1; // enable RTS , output
+    
     RTS = 1; // default status , not ready to send
+    FLUSH_BUFFER();
 }
 
 char putU2(char c)
@@ -46,28 +50,31 @@ char putU2(char c)
 char getU2( void )
 {
     RTS = 0; // telling the other side !RTS
-    TMR1 = 0;
-    while (!U2STAbits. URXDA && TMR1 < 100 * 2);
+    unsigned int max_tries = 100;
+    while (!U2STAbits. URXDA && max_tries-- > 0);
     if (!U2STAbits. URXDA)
     {
         RTS = 1;
         return NEWLINE;
     }
-//    while (! U2STAbits . URXDA ); // wait
-    RTS =1; // telling the other side RTS
+    RTS = 1; // telling the other side RTS
     return U2RXREG ; // from receiving buffer
 } //getU2
 
 // Bluetooth Communication
 int checkCommand(char c)
 {
-    if (c == 's')           // checks if command was START
+    if (c == CHAR_a + 18)           // checks if command was START
     {
-        return 1;
+        return START_CMD;
     }
-    else if (c == 'e')      // checks if command was END
+    else if (c == CHAR_a + 4)      // checks if command was END
     {
-        return 2;
+        return END_CMD;
+    }
+    else if (c == CHAR_a + 17)      // checks if command was RELEASE
+    {
+        return RELEASE_CMD;
     }
     else
     {
@@ -77,24 +84,24 @@ int checkCommand(char c)
 
 int getCommand ()
 {
-    int command = -1;
+    int command = NO_CMD;
     
-    int isCommand;
+    int isCommand = 0;
     char str[3];
     int size = 0;
     
-    TMR1 = 0;
-    while(command == -1 && TMR1 < 1000)
+    unsigned int max_letters = 5; // Includes asterisks
+    
+    
+    while(command == NO_CMD && max_letters-- > 0)
     {
         char temp;
         temp = getU2();
         msDelay(50);
-        
+
         // Checks if char is asterisk
         if (temp == ASTERISK)
         {
-            U2STAbits.OERR = 0;
-            return 1;
             isCommand = !isCommand;     //sets command flag
             
             if (isCommand)
@@ -105,13 +112,14 @@ int getCommand ()
             else
             {
                 // End of a command
+                str[size] = NULL;
                 putU2(CARRIAGE);
                 msDelay(50);
                 putU2(NEWLINE);
                 msDelay(50);
-                U2STAbits.OERR = 0;
+                FLUSH_BUFFER();
                 command = checkCommand(str[0]);
-                SetCursorAtLine(2);
+                return command;
             }
         }
         else if (isCommand && temp != NEWLINE)  // Middle of a command
@@ -121,8 +129,14 @@ int getCommand ()
             size++;
         }
     }
-   
+
+    FLUSH_BUFFER();
     return command;
+}
+
+void resetU2()
+{
+    FLUSH_BUFFER();
 }
 
 int isLetter(char c)
