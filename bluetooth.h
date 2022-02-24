@@ -22,7 +22,6 @@ extern "C" {
     int getCommand ();
     int isLetter(char c);
 
-
 #ifdef	__cplusplus
 }
 #endif

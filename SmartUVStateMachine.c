@@ -150,6 +150,11 @@ void processCurrentState(State* current_state)
 void Initialization(State* state)
 {
     Running(state); // Parent State
+
+    // CLEAR any bottom text
+    SetCursorAtLine(2);
+    putsLCD("                 ");
+
     int command = getCommand();
     if (getButton(BUTTON_READY_FOR_NEXT) || command)
     {
@@ -212,17 +217,15 @@ void VerifyChamberReady(State* state)
 
     double dist_cm = GetDistanceCm();
     int is_open_door_detected = (dist_cm > MAX_DIST); /* about 2 ft */
-
-    SetCursorAtLine(2);
     
     int command = getCommand();
-//    int command = getButton(BUTTON_READY_FOR_NEXT)? 1: 0;
     int is_start = (command == 1);
-    
-    char str[16];
-    sprintf(str, "got%c %d, isS%d", (char)command, command, is_start);
-//    putsLCD(str);
-    msDelay(500);
+
+    // CLEAR any bottom text
+    SetCursorAtLine(2);
+    putsLCD("                 ");
+
+    msDelay(30);
     if (is_start && (!is_person_detected && !is_open_door_detected))
     {
         // Event: Chamber Ready and got UI command [No Person AND Door closed AND UI Cmd]
@@ -237,7 +240,7 @@ void VerifyChamberReady(State* state)
     char info_str[12];
     char err_str[16] = "";
     SetCursorAtLine(2);
-    sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
+        sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
     if (is_person_detected)
     {
         strcat(err_str, "!!");
@@ -361,7 +364,7 @@ void printFaultState(FaultName fault_name)
     switch(fault_name)
     {
         case NO_FAULT:
-            putsLCD("--           ");
+//            putsLCD("--           ");
             break;
         case FAULT_ESTOP:
             putsLCD("ESTOPPED     ");

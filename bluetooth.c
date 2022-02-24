@@ -112,7 +112,6 @@ int getCommand ()
                 U2STAbits.OERR = 0;
                 command = checkCommand(str[0]);
                 SetCursorAtLine(2);
-                putsLCD(str);
             }
         }
         else if (isCommand && temp != NEWLINE)  // Middle of a command
