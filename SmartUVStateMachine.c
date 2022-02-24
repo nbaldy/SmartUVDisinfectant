@@ -60,6 +60,7 @@ struct State InitStateMachine()
 {
     State new_sm;
     new_sm.display = 0x00;
+    new_sm.cycle_ok = FALSE;
     new_sm.state_name = STATE_UNKNOWN;
     initPortA();
     initButtons(0x000F); // All buttons as inputs: 0xF
@@ -76,8 +77,9 @@ struct State InitStateMachine()
     LED_TRIS = 0;
     LED_PIN = LED_OFF;
 
+    InitU2();
     new_sm.active_fault = FAULT_UNKNOWN;
-    new_sm.state_name = STATE_INITIALIZATION;
+    Transition(&new_sm, STATE_INITIALIZATION);
     return new_sm;
 }
 
@@ -149,8 +151,6 @@ void Initialization(State* state)
     // Ensure that we do not move forward on a power cycle due to power to buttons weird
     Running(state); // Parent State
 
-    InitU2();
-
     if (getButton(BUTTON_READY_FOR_NEXT) || (getCommand() == START_CMD))
     {
         // NOTE(NEB): For now, consider "initialized" when button pressed.
@@ -212,7 +212,6 @@ void VerifyChamberReady(State* state)
     double dist_cm = GetDistanceCm();
     int is_open_door_detected = (dist_cm > MAX_DIST); /* about 2 ft */
 
-    msDelay(30);
     if (((getCommand() == START_CMD) || (getButton(BUTTON_READY_FOR_NEXT)))
             && (!is_person_detected && !is_open_door_detected))
     {
@@ -232,13 +231,20 @@ void VerifyChamberReady(State* state)
     if (is_person_detected)
     {
         sendToU2("Person Detected!", 17);
+        state->cycle_ok = FALSE;
     }
-    // String is [!!]? px cm [!!]?
     strcat(err_str, info_str);
 
     if (is_open_door_detected)
     {
         sendToU2("Door Open!", 17);
+        state->cycle_ok = FALSE;
+    }
+
+    if(!(is_person_detected || is_open_door_detected) && state->cycle_ok == FALSE)
+    {
+        sendToU2("Warnings Clear!", 17);
+        state->cycle_ok = TRUE;
     }
     putsLCD(err_str);
 
@@ -386,4 +392,5 @@ void Transition(State *state, StateName new_state)
 
         // Next state on the following tick
         state->state_name = new_state;
+        state->cycle_ok = FALSE;
 }

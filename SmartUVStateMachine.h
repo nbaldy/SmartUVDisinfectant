@@ -14,6 +14,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#define TRUE 1
+#define FALSE 0
+#define bool unsigned int
+
 typedef enum StateName
 {
     STATE_UNKNOWN,
@@ -51,6 +55,7 @@ typedef struct State
     enum StateName state_name;
     unsigned char display;
     enum FaultName active_fault;
+    bool cycle_ok;
     // TODO(NEB): Store last known sensor status, Estop status, etc here.
 } State;
 

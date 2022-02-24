@@ -6,6 +6,12 @@
 
 #include "AMG88.h"
 #include "peripherals.h"
+
+typedef unsigned char bool;
+
+#define TRUE (1)
+#define FALSE (0)
+
 /*******************************************************************************
 variable value definition
 *******************************************************************************/
