@@ -1,5 +1,5 @@
 /**
- * Last Modified by Nicole Baldy, 1/22
+ * Last Modified by Nicole Baldy, 3/17
  * 
  * HC-SR04 is an ultrasonic distance sensor.
 **/
@@ -11,10 +11,10 @@
 
 #include <xc.h> // include processor files - each processor file is guarded.  
 
-#define ECHO_PIN PORTGbits.RG0
-#define TRIG_PIN PORTGbits.RG1
-#define ECHO_TRIS TRISGbits.TRISG0
-#define TRIG_TRIS TRISGbits.TRISG1
+#define ECHO_PIN PORTGbits.RG1
+#define TRIG_PIN PORTGbits.RG0
+#define ECHO_TRIS TRISGbits.TRISG1
+#define TRIG_TRIS TRISGbits.TRISG0
 
 void InitUSensor(void);
 double GetDistanceCm(void);
