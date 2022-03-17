@@ -4,7 +4,7 @@
 #include "peripherals.h"
 #include "AMG88.h" // IR Grid-eye
 #include "timer.h"
-#include "MG996R.h"
+#include "Lock.h"
 #include "HCSR04.h"
 #include   <stdio.h>
 #include   <stdlib.h>
@@ -69,7 +69,7 @@ struct State InitStateMachine()
     InitLCD();
     InitUSensor();
     I2Cinit(157);
-    InitServo();
+    InitLock();
 
     // Use P97 = RG13 for door input
     DOOR_TRIS = 1;
@@ -170,6 +170,7 @@ void WaitForObject(State* state)
     if (1 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
         // Event: Door Closed
+        Lock();
         Transition(state, STATE_VERIFY_CHAMBER_READY);
         return;
     }
@@ -183,7 +184,7 @@ void OpenDoor(State* state)
     Running(state); // Parent State
 
     // Open door
-    ServoGoToPosition(0, 400);
+    Unlock();
 
     if (0 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
@@ -192,7 +193,6 @@ void OpenDoor(State* state)
 
         // Event: Door Opened
         Transition(state, STATE_WAIT_FOR_OBJECT);
-        ServoGoToPosition(180, 1000);
         return;
     }
 
