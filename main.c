@@ -9,7 +9,6 @@
 #include "mcc_generated_files/system.h"
 #include "peripherals.h"
 #include "SmartUVStateMachine.h"
-#include "MG996R.h"
 /*
     Main application
  */
