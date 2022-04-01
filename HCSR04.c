@@ -9,6 +9,8 @@
 #include <xc.h> // include processor files - each processor file is guarded.  
 #include "peripherals.h"
 
+#define TIMEOUT 65535
+
 void InitUSensor(void)
 {
     // Setup HC-SR04
@@ -28,11 +30,13 @@ double GetDistanceCm(void)
     unsigned int n = 0;
 
     // TODO: Ensure a non-timeout condition and make this timer configuration safe. 
-    while(!ECHO_PIN && n < 65535){ Nop(); n++; }
+    while(!ECHO_PIN && n < TIMEOUT){ Nop(); n++; }
+    if (n >= 65535) { return -1; }
 
     TMR1 = 0;
     n = 0;
     while(ECHO_PIN && n < 65535){ Nop(); n++; }
+    if (n >= TIMEOUT) { return -1; }
 
     return (double)TMR1 / (2*58); // us / 58
 }

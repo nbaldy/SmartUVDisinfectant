@@ -151,13 +151,32 @@ void Initialization(State* state)
     // Ensure that we do not move forward on a power cycle due to power to buttons weird
     Running(state); // Parent State
 
-    if (getButton(BUTTON_READY_FOR_NEXT) || (getCommand() == START_CMD))
+    // NOTE(NEB): "Initialized" when sensors give "reasonable" feedback.
+    bReadTempFromGridEYE();
+    msDelay(10); // Give time to Read Everything
+
+    double dist_cm = GetDistanceCm();
+    int is_us_success = (dist_cm > 0);
+
+    int num_pxls_zero = numPixelsInRange(0, 1);
+    int is_grid_eye_success = (num_pxls_zero < 64);
+
+    if (is_grid_eye_success && is_us_success)
     {
-        // NOTE(NEB): For now, consider "initialized" when button pressed.
         Transition(state, STATE_DOOR_OPENING);
         // Clear any initialization faults
         state->active_fault = NO_FAULT;
         return;
+    }
+    else
+    {
+        state->active_fault = FAULT_SENSOR_ERROR;
+
+        char info_str[17];
+        SetCursorAtLine(2);
+        sprintf(info_str, "%dpx m%.1f %1.1fcm", num_pxls_zero, maxPixel(), dist_cm);
+        putsLCD(info_str);
+        msDelay(200);
     }
 
     // TODO(NEB): Initialize all sensors.
@@ -378,6 +397,9 @@ void printFaultState(FaultName fault_name)
             break;
         case FAULT_INVALID_STATE:
             putsLCD("INVALID STATE");
+            break;
+        case FAULT_SENSOR_ERROR:
+            putsLCD("SENSOR ERR   ");
             break;
         default:
         case FAULT_UNKNOWN:
