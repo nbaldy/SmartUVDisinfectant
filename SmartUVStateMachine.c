@@ -16,10 +16,10 @@
 #define DOOR_PIN PORTGbits.RG13
 #define DOOR_TRIS TRISGbits.TRISG13
 
-#define LED_ON 0
-#define LED_OFF 1
+#define LED_ON 1
+#define LED_OFF 0
 
-#define MAX_DIST 25 // Should be 61 but reduced for cardboard demo
+#define MAX_DIST 61
 
 StateNameStr getStateNameStr(enum StateName state_enumeration)
 {
@@ -161,7 +161,7 @@ void Initialization(State* state)
     int num_pxls_zero = numPixelsInRange(0, 1);
     int is_grid_eye_success = (num_pxls_zero < 64);
 
-    if (is_grid_eye_success && is_us_success)
+    if ((is_grid_eye_success && is_us_success))
     {
         Transition(state, STATE_DOOR_OPENING);
         // Clear any initialization faults
@@ -188,10 +188,15 @@ void WaitForObject(State* state)
     Running(state); // Parent State
     if (1 == DOOR_PIN) // P97 = RG13 should be used for door input
     {
-        // Event: Door Closed
+       // Event: Door Closed
+        msDelay(200);
         Lock();
         Transition(state, STATE_VERIFY_CHAMBER_READY);
         return;
+    }
+    else
+    {
+        Unlock();
     }
 
     // TODO(NEB): Wait for door closed sense
@@ -249,7 +254,7 @@ void VerifyChamberReady(State* state)
     sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
     if (is_person_detected)
     {
-        sendToU2("Person Detected!", 17);
+        sendToU2("f:Person Detected!", 17);
         state->cycle_ok = FALSE;
     }
     strcat(err_str, info_str);

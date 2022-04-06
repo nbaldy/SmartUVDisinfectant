@@ -3,7 +3,7 @@
 #include "Lock.h"
 #include "peripherals.h"
 
-#include <xc.h> // include processor files - each processor file is guarded.  
+#include <xc.h> // include processor files - each processor file is guarded.
 
 void InitLock()
 {
@@ -12,7 +12,12 @@ void InitLock()
 
 void Lock()
 {
-    LOCK_PIN = 1;
+    int n;
+    for (n = 0; n < 2000; n++)
+    {
+        LOCK_TRIS = 0; // Output
+        LOCK_PIN = 1;
+    }
 }
 
 void Unlock()
