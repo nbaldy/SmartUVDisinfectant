@@ -242,7 +242,7 @@ void VerifyChamberReady(State* state)
 
     if(!(is_person_detected || is_open_door_detected) && state->cycle_ok == FALSE)
     {
-        sendToU2("f:clr", STR_CODE_WIDTH);
+        sendToU2(getFaultStr(NO_FAULT), STR_CODE_WIDTH);
         state->cycle_ok = TRUE;
     }
     else
