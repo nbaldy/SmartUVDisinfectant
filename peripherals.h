@@ -27,7 +27,7 @@ void InitPMP(void);
 void InitLCD(void);
 char ReadLCD(int addr);
 void WriteLCD(int addr, char c);
-void putsLCD(char *s);
+void putsLCD(const char *s);
 void SetCursorAtLine(int i);
 
 void I2Cinit(int BRG);

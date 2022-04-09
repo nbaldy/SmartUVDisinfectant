@@ -1,8 +1,7 @@
 /* 
  * File:   Smart UV State Machine
  * Author: Nicole Baldy
- * Comments: State Machine Interface Definition
- * Revision history: Initial Revision
+ * Comments: State Machine Definition
  */
 
 #ifndef SMART_UV_STATE_MACHINE_H
@@ -14,42 +13,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "StateInformation.h"
+
 #define TRUE 1
 #define FALSE 0
 #define bool unsigned int
-
-typedef enum StateName
-{
-    STATE_UNKNOWN,
-    STATE_INITIALIZATION,
-    STATE_WAIT_FOR_OBJECT,
-    STATE_VERIFY_CHAMBER_READY,
-    STATE_ACTIVE_CYCLE,
-    STATE_WAIT_FOR_RELEASE,
-    STATE_FAULT,
-    STATE_DOOR_OPENING,
-    STATE_RUNNING // Parent State Only
-} StateName;
-
-typedef enum FaultName
-{
-    FAULT_UNKNOWN,
-    NO_FAULT,
-    FAULT_ESTOP,
-    FAULT_DOOR_OPEN,
-    FAULT_TIMER_ERROR,
-    FAULT_INVALID_STATE,
-    FAULT_SENSOR_ERROR,
-    FAULT_MOTOR_JAMMED
-} FaultName;
-
-// 8-character representation of state name for display
-typedef struct StateNameStr
-{
-    char str[17]; // 16 char + nullcharacter
-} StateNameStr;
-
-StateNameStr getStateNameStr(enum StateName state_enumeration);
 
 typedef struct State
 {

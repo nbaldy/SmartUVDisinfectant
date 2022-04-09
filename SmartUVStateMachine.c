@@ -5,11 +5,15 @@
 #include "AMG88.h" // IR Grid-eye
 #include "timer.h"
 #include "Lock.h"
+#include "bluetooth.h"
+#include "hullSensor.h"
+#include "StateInformation.h"
+
 #include "HCSR04.h"
 #include   <stdio.h>
 #include   <stdlib.h>
 #include   <string.h>
-#include "bluetooth.h"
+
 
 #define LED_PIN PORTGbits.RG14
 #define LED_TRIS TRISGbits.TRISG14
@@ -22,44 +26,7 @@
 #define MAX_DIST 41 // cm
 #define MAX_SECONDS_BETWEEN_DETECTION 10 // 6 rpm
 
-#include "hullSensor.h"
-
 int lastHullDetectSecond = 0;
-
-StateNameStr getStateNameStr(enum StateName state_enumeration)
-{
-    StateNameStr str_repr;
-
-    switch(state_enumeration)
-    {
-        case STATE_INITIALIZATION:
-           strcpy(str_repr.str, "INIT            ");
-           break;
-        case STATE_DOOR_OPENING:
-           strcpy(str_repr.str, "OPEN DOOR       ");
-           break;
-        case STATE_WAIT_FOR_OBJECT:
-           strcpy(str_repr.str, "WAIT FOR OBJ    ");
-           break;
-        case STATE_VERIFY_CHAMBER_READY:
-           strcpy(str_repr.str, "CHECK READY     ");
-           break;
-        case STATE_ACTIVE_CYCLE:
-           strcpy(str_repr.str, "CYCLE ACTIVE    ");
-           break;
-        case STATE_WAIT_FOR_RELEASE:
-           strcpy(str_repr.str, "WAIT FOR RELEASE");
-           break;
-        case STATE_FAULT:
-           strcpy(str_repr.str, "FAULT           ");
-           break;
-        default:
-           strcpy(str_repr.str, "UNKNOWN STATE   ");
-           break;
-    }
-
-    return str_repr;
-}
 
 struct State InitStateMachine()
 {
@@ -93,11 +60,11 @@ void processCurrentState(State* current_state)
 {
     // Rebuilt display with each tick (TODO - reconsider this.)
     current_state->display = 0x00;
-    StateNameStr state_str = getStateNameStr(current_state->state_name);
+    const char* state_str = getStateStr(current_state->state_name);
 
     // Print State Name at the top left corner.
     SetCursorAtLine(1);
-    putsLCD((char *)state_str.str);
+    putsLCD(state_str);
 
     switch(current_state->state_name)
     {
@@ -262,21 +229,26 @@ void VerifyChamberReady(State* state)
     sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
     if (is_person_detected)
     {
-        sendToU2("f:Person Detected!", 17);
+        sendToU2(getFaultStr(WARN_PERSON_DETECTED), STR_CODE_WIDTH);
         state->cycle_ok = FALSE;
     }
     strcat(err_str, info_str);
 
     if (is_open_door_detected)
     {
-        sendToU2("Door Open!", 17);
+        sendToU2(getFaultStr(FAULT_DOOR_OPEN), STR_CODE_WIDTH);
         state->cycle_ok = FALSE;
     }
 
     if(!(is_person_detected || is_open_door_detected) && state->cycle_ok == FALSE)
     {
-        sendToU2("Warnings Clear!", 17);
+        sendToU2("f:clr", STR_CODE_WIDTH);
         state->cycle_ok = TRUE;
+    }
+    else
+    {
+        // Wait 1 second before checking again
+        msDelay(1000);
     }
     putsLCD(err_str);
 
@@ -342,10 +314,9 @@ void ActiveCycle(State* state)
     if (state->seconds_remaining != seconds_remaining &&
             (seconds_remaining % 30 == 0))
     {
-        int minutes = seconds_remaining / 60;
-        char str[17];
-        sprintf(str, "%dm %ds remain %d", minutes, seconds_remaining - minutes*60, getNumDetections());
-        sendToU2(str, 17);
+        char str[6];
+        sprintf(str, "t:%d", seconds_remaining);
+        sendToU2(str, STR_CODE_WIDTH);
         state->seconds_remaining = seconds_remaining;
     }
     LED_PIN = LED_ON;
@@ -372,7 +343,7 @@ void WaitForRelease(State* state)
 
 void Fault(State* state)
 {
-    if (getButton(BUTTON_CLEAR_FAULT) || getCommand() == RELEASE_CMD)
+    if (getButton(BUTTON_CLEAR_FAULT) || getCommand() == CLR_CMD)
     {
         // NOTE(NEB): For now, consider "fault cleared" when button pressed.
         // Event: Fault Cleared
@@ -410,33 +381,7 @@ void printFaultState(FaultName fault_name)
 {
     // Print Door Status at the bottom left.
     SetCursorAtLine(2);
-    switch(fault_name)
-    {
-        case NO_FAULT:
-            // Nothing to do here
-            break;
-        case FAULT_ESTOP:
-            putsLCD("ESTOPPED     ");
-            break;
-        case FAULT_DOOR_OPEN:
-            putsLCD("DOOR OPEN    ");
-            break;
-        case FAULT_TIMER_ERROR:
-            putsLCD("TIMER ERR    ");
-            break;
-        case FAULT_INVALID_STATE:
-            putsLCD("INVALID STATE");
-            break;
-        case FAULT_SENSOR_ERROR:
-            putsLCD("SENSOR ERR   ");
-            break;
-        case FAULT_MOTOR_JAMMED:
-            putsLCD("MOTOR JAM ERR");
-        default:
-        case FAULT_UNKNOWN:
-            putsLCD("Unknown Fault");
-            break;
-    }
+    putsLCD(getFaultStr(fault_name));
 }
 
 // Perform standard transition actions
@@ -450,8 +395,8 @@ void Transition(State *state, StateName new_state)
         resetU2();
 
         // Send new name to the app
-        StateNameStr state_str = getStateNameStr(new_state);
-        sendToU2(state_str.str, 17);
+        const char* state_str = getStateStr(new_state);
+        sendToU2(state_str, STR_CODE_WIDTH);
 
         // Next state on the following tick
         state->state_name = new_state;

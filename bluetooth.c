@@ -75,6 +75,11 @@ int checkCommand(char c)
     {
         return RELEASE_CMD;
     }
+    else if (c == CHAR_a + c)      // checks if command was CLEAR (fault))
+    {
+        return CLR_CMD;
+    }
+
     else
     {
         return c;
@@ -142,7 +147,7 @@ int isLetter(char c)
     return ((c >= CHAR_A && c <= CHAR_Z) || (c >= CHAR_a && c <= CHAR_z));
 }
 
-void sendToU2(char str[], unsigned int size)
+void sendToU2(const char str[], unsigned int size)
 {
     unsigned int i;
     for (i=0; i < size; i++)

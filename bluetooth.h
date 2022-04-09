@@ -11,6 +11,7 @@
 #define START_CMD 1
 #define END_CMD 2
 #define RELEASE_CMD 3
+#define CLR_CMD 4
 #define NO_CMD 0
 
 #ifdef	__cplusplus
@@ -27,7 +28,7 @@ extern "C" {
 
     void resetU2(void);
 
-    void sendToU2(char str[], unsigned int size);
+    void sendToU2(const char str[], unsigned int size);
 
 #ifdef	__cplusplus
 }
