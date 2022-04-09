@@ -48,6 +48,6 @@ float  fAMG_PUB_CMN_ConvStoF( short );
 
 // t1 expected < t2
 int numPixelsInRange(short t1, short t2);
-short maxPixel();
+float maxPixel();
 #endif	/* AMG88_H */
 

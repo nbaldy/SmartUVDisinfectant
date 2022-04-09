@@ -169,7 +169,7 @@ int numPixelsInRange(short t1, short t2)
     return num_in_range;
 }
 
-short maxPixel()
+float maxPixel()
 {
     int largest_value = -100;
     int i;

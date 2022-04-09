@@ -19,7 +19,12 @@
 #define LED_ON 1
 #define LED_OFF 0
 
-#define MAX_DIST 61
+#define MAX_DIST 41 // cm
+#define MAX_SECONDS_BETWEEN_DETECTION 10 // 6 rpm
+
+#include "hullSensor.h"
+
+int lastHullDetectSecond = 0;
 
 StateNameStr getStateNameStr(enum StateName state_enumeration)
 {
@@ -70,6 +75,7 @@ struct State InitStateMachine()
     InitUSensor();
     I2Cinit(157);
     InitLock();
+    initHullSensor();
 
     // Use P97 = RG13 for door input
     DOOR_TRIS = 1;
@@ -176,7 +182,7 @@ void Initialization(State* state)
         SetCursorAtLine(2);
         sprintf(info_str, "%dpx m%.1f %1.1fcm", num_pxls_zero, maxPixel(), dist_cm);
         putsLCD(info_str);
-        msDelay(200);
+        msDelay(500);
     }
 
     // TODO(NEB): Initialize all sensors.
@@ -241,6 +247,8 @@ void VerifyChamberReady(State* state)
     {
         // Event: Chamber Ready and got UI command [No Person AND Door closed AND UI Cmd]
         Transition(state, STATE_ACTIVE_CYCLE);
+        resetHullSensor();
+        lastHullDetectSecond = 0;
         ConfigureLongTimer(5*60);
         StartLongTimer();
         return;
@@ -314,13 +322,29 @@ void ActiveCycle(State* state)
         return;
     }
 
+    int currentSecond = GetSecondsElapsed();
+    if(HULL_DETECTION == detect())
+        lastHullDetectSecond = GetSecondsElapsed();
+
+    if ((currentSecond - lastHullDetectSecond) > MAX_SECONDS_BETWEEN_DETECTION)
+    {
+        LED_PIN = LED_OFF;
+        state->active_fault = FAULT_MOTOR_JAMMED;
+        SetFault(state);
+        return;
+    }
+    char rpm_str[17];
+    sprintf(rpm_str, "~%6.4f RPM", (double)(60*getNumDetections())/GetSecondsElapsed());
+    SetCursorAtLine(2);
+    putsLCD(rpm_str);
+
     int seconds_remaining = GetSecondsRemaining();
     if (state->seconds_remaining != seconds_remaining &&
             (seconds_remaining % 30 == 0))
     {
         int minutes = seconds_remaining / 60;
         char str[17];
-        sprintf(str, "%dm %ds remaining", minutes, seconds_remaining - minutes*60);
+        sprintf(str, "%dm %ds remain %d", minutes, seconds_remaining - minutes*60, getNumDetections());
         sendToU2(str, 17);
         state->seconds_remaining = seconds_remaining;
     }
@@ -406,6 +430,8 @@ void printFaultState(FaultName fault_name)
         case FAULT_SENSOR_ERROR:
             putsLCD("SENSOR ERR   ");
             break;
+        case FAULT_MOTOR_JAMMED:
+            putsLCD("MOTOR JAM ERR");
         default:
         case FAULT_UNKNOWN:
             putsLCD("Unknown Fault");

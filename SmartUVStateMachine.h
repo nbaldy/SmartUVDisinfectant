@@ -39,7 +39,8 @@ typedef enum FaultName
     FAULT_DOOR_OPEN,
     FAULT_TIMER_ERROR,
     FAULT_INVALID_STATE,
-    FAULT_SENSOR_ERROR
+    FAULT_SENSOR_ERROR,
+    FAULT_MOTOR_JAMMED
 } FaultName;
 
 // 8-character representation of state name for display
