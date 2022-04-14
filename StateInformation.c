@@ -9,8 +9,6 @@ const char* getStateStr(StateName state)
 {
     switch(state)
     {
-    case STATE_UNKNOWN:
-		return "s:UNK\0";
     case STATE_INITIALIZATION:
 		return "s:INT\0";
     case STATE_WAIT_FOR_OBJECT:
@@ -25,6 +23,9 @@ const char* getStateStr(StateName state)
 		return "s:FLT\0";
     case STATE_DOOR_OPENING:
 		return "s:ODR\0";
+    case STATE_UNKNOWN:
+    default:
+        return "s:UNK\0";
     };
 }
 const char* getFaultStr(FaultName fault)

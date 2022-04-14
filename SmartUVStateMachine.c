@@ -23,8 +23,8 @@
 #define LED_ON 1
 #define LED_OFF 0
 
-#define MAX_DIST 41 // cm
-#define MAX_SECONDS_BETWEEN_DETECTION 10 // 6 rpm
+#define MAX_DIST 25 // cm
+#define MAX_SECONDS_BETWEEN_DETECTION 2 // Experimental - 12 magnets
 
 int lastHullDetectSecond = 0;
 
@@ -121,6 +121,8 @@ void processCurrentState(State* current_state)
 
 void Initialization(State* state)
 {
+    state->active_fault = FAULT_UNKNOWN;
+
     // Ensure that we do not move forward on a power cycle due to power to buttons weird
     Running(state); // Parent State
 
@@ -147,7 +149,7 @@ void Initialization(State* state)
 
         char info_str[17];
         SetCursorAtLine(2);
-        sprintf(info_str, "%dpx m%.1f %1.1fcm", num_pxls_zero, maxPixel(), dist_cm);
+        sprintf(info_str, "%dpx %1.1fcm", num_pxls_zero, dist_cm);
         putsLCD(info_str);
         msDelay(500);
     }
@@ -163,14 +165,11 @@ void WaitForObject(State* state)
     {
        // Event: Door Closed
         msDelay(200);
-        Lock();
         Transition(state, STATE_VERIFY_CHAMBER_READY);
         return;
     }
-    else
-    {
-        Unlock();
-    }
+
+    Unlock();
 
     // TODO(NEB): Wait for door closed sense
     state->display |= 0x02;
@@ -202,13 +201,15 @@ void VerifyChamberReady(State* state)
     bReadTempFromGridEYE();
     msDelay(10); // Give time to Read Everything
     Running(state); // Parent State
+    Lock();
 
     int num_pxls_body_temp = numPixelsInRange(27*256, 40*256); // between 27 and 40 C for now
     int is_person_detected = (num_pxls_body_temp >= 4); /* Experimental: 4+ pixels is a very good indicator of a person */
 
     double dist_cm = GetDistanceCm();
-    int is_open_door_detected = (dist_cm > MAX_DIST); /* about 2 ft */
+    int is_open_door_detected = (dist_cm != -1 && dist_cm > MAX_DIST); /* about 2 ft */
 
+    // Move to active cycle if ready
     if (((getCommand() == START_CMD) || (getButton(BUTTON_READY_FOR_NEXT)))
             && (!is_person_detected && !is_open_door_detected))
     {
@@ -220,37 +221,39 @@ void VerifyChamberReady(State* state)
         StartLongTimer();
         return;
     }
+    // Move to open door if canceled
+    if(getCommand() == END_CMD)
+    {
+        Transition(state, STATE_DOOR_OPENING);
+        return;
+    }
 
     // Something is not ready, print warnings
     // TODO[NEB]: Send to UI
     char info_str[12];
-    char err_str[16] = "";
     SetCursorAtLine(2);
-    sprintf(info_str, "%dpx %1.1fcm", num_pxls_body_temp, dist_cm);
+    sprintf(info_str, "     %d %1.1f", num_pxls_body_temp, dist_cm);
+    putsLCD(info_str);
+    state->cycle_ok = TRUE;
+    state->active_fault = NO_FAULT;
+
     if (is_person_detected)
     {
-        sendToU2(getFaultStr(WARN_PERSON_DETECTED), STR_CODE_WIDTH);
+        state->active_fault = WARN_PERSON_DETECTED;
         state->cycle_ok = FALSE;
     }
-    strcat(err_str, info_str);
 
     if (is_open_door_detected)
     {
-        sendToU2(getFaultStr(FAULT_DOOR_OPEN), STR_CODE_WIDTH);
+        state->active_fault = FAULT_DOOR_OPEN;
         state->cycle_ok = FALSE;
     }
 
-    if(!(is_person_detected || is_open_door_detected) && state->cycle_ok == FALSE)
+    if(!state->cycle_ok)
     {
-        sendToU2(getFaultStr(NO_FAULT), STR_CODE_WIDTH);
-        state->cycle_ok = TRUE;
+        // Wait 0.5 second before checking again
+        msDelay(500);
     }
-    else
-    {
-        // Wait 1 second before checking again
-        msDelay(1000);
-    }
-    putsLCD(err_str);
 
     if(0 == DOOR_PIN)
     {
@@ -303,10 +306,13 @@ void ActiveCycle(State* state)
         LED_PIN = LED_OFF;
         state->active_fault = FAULT_MOTOR_JAMMED;
         SetFault(state);
+        Transition(state, STATE_WAIT_FOR_RELEASE);
         return;
     }
     char rpm_str[17];
-    sprintf(rpm_str, "~%6.4f RPM", (double)(60*getNumDetections())/GetSecondsElapsed());
+    sprintf(rpm_str, "%d: ~%4.2f RPM",
+                    getNumDetections(),
+                    (double)(5 *getNumDetections())/GetSecondsElapsed()); /*60s / 12 magnets*/
     SetCursorAtLine(2);
     putsLCD(rpm_str);
 
@@ -325,16 +331,32 @@ void ActiveCycle(State* state)
     state->display = (GetSecondsElapsed() & 0x7f);
 }
 
+int timer_configured = FALSE;
 void WaitForRelease(State* state)
 {
     // TODO(NEB): Unlock when get command from UI.
     Running(state); // Parent State
+
+    if(timer_configured == FALSE)
+    {
+        ConfigureLongTimer(1*60); /* 1 min timeout*/
+        StartLongTimer();
+        timer_configured = TRUE;
+    }
 
     if (getButton(BUTTON_READY_FOR_NEXT) || getCommand() == RELEASE_CMD)
     {
         // Event: Unlock Cmd Recieved
         Transition(state, STATE_DOOR_OPENING);
         return;
+    }
+
+    if(STATUS_DONE == CheckTimerStatus())
+    {
+        char str[6];
+        sendToU2(getFaultStr(WARN_RELEASE_TIMEOUT), STR_CODE_WIDTH);
+        state->active_fault = WARN_RELEASE_TIMEOUT;
+        Transition(state, STATE_DOOR_OPENING);
     }
 
     // TODO(NEB): Wait for unlock cmd
@@ -352,6 +374,7 @@ void Fault(State* state)
         return;
     }
 
+    LED_PIN = LED_OFF;
     state->display = 0x7F; // Active Fault
     printFaultState(state->active_fault);
 }
@@ -377,11 +400,18 @@ void SetFault(State *state)
     setPortA(state->display);
 }
 
+FaultName last_fault_sent;
+
 void printFaultState(FaultName fault_name)
 {
     // Print Door Status at the bottom left.
-    SetCursorAtLine(2);
-    putsLCD(getFaultStr(fault_name));
+    if (last_fault_sent != fault_name)
+    {
+        SetCursorAtLine(2);
+        putsLCD(getFaultStr(fault_name));
+        sendToU2(getFaultStr(fault_name), STR_CODE_WIDTH);
+        last_fault_sent = fault_name;
+    }
 }
 
 // Perform standard transition actions
@@ -401,4 +431,5 @@ void Transition(State *state, StateName new_state)
         // Next state on the following tick
         state->state_name = new_state;
         state->cycle_ok = FALSE;
+        timer_configured = 0;
 }
