@@ -24,7 +24,7 @@
 #define LED_OFF 0
 
 #define MAX_DIST 25 // cm
-#define MAX_SECONDS_BETWEEN_DETECTION 2 // Experimental - 12 magnets
+#define MAX_SECONDS_BETWEEN_DETECTION 20 // Experimental - 5 magnets
 
 int lastHullDetectSecond = 0;
 
@@ -169,7 +169,17 @@ void WaitForObject(State* state)
         return;
     }
 
-    Unlock();
+    if (GetDistanceCm() < MAX_DIST /*cm*/)
+    {
+        // Door is being closed, unlock so it can be closed completely
+        Unlock();
+    }
+    else
+    {
+        // Door completely open, let the solenoid be unpowered
+        Lock();        
+    }
+
 
     // TODO(NEB): Wait for door closed sense
     state->display |= 0x02;
@@ -298,11 +308,12 @@ void ActiveCycle(State* state)
     }
 
     int currentSecond = GetSecondsElapsed();
-    if(HULL_DETECTION == detect())
-        lastHullDetectSecond = GetSecondsElapsed();
+    if(detect())
+        lastHullDetectSecond = currentSecond;
 
     if ((currentSecond - lastHullDetectSecond) > MAX_SECONDS_BETWEEN_DETECTION)
     {
+        SetCursorAtLine(2);
         LED_PIN = LED_OFF;
         state->active_fault = FAULT_MOTOR_JAMMED;
         SetFault(state);
@@ -310,9 +321,9 @@ void ActiveCycle(State* state)
         return;
     }
     char rpm_str[17];
-    sprintf(rpm_str, "%d: ~%4.2f RPM",
-                    getNumDetections(),
-                    (double)(5 *getNumDetections())/GetSecondsElapsed()); /*60s / 12 magnets*/
+    sprintf(rpm_str, "%3.2frpm %d %d",
+                    (double)(10 *getNumDetections())/GetSecondsElapsed(), /*60s / 12 magnets*/
+                    currentSecond, lastHullDetectSecond);
     SetCursorAtLine(2);
     putsLCD(rpm_str);
 
@@ -353,7 +364,6 @@ void WaitForRelease(State* state)
 
     if(STATUS_DONE == CheckTimerStatus())
     {
-        char str[6];
         sendToU2(getFaultStr(WARN_RELEASE_TIMEOUT), STR_CODE_WIDTH);
         state->active_fault = WARN_RELEASE_TIMEOUT;
         Transition(state, STATE_DOOR_OPENING);
