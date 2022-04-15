@@ -42,6 +42,7 @@ void StartLongTimer(void);
 // Timer status assumed to be checked at a rate > 1/3 sec
 enum LongTimerStatus CheckTimerStatus(void);
 int GetSecondsElapsed(void);
+int GetSecondsRemaining(void);
 
 extern int _num_seconds_needed; // Set by config.
 extern int _num_seconds_detected; // Updated each check.

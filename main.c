@@ -9,7 +9,6 @@
 #include "mcc_generated_files/system.h"
 #include "peripherals.h"
 #include "SmartUVStateMachine.h"
-#include "MG996R.h"
 /*
     Main application
  */
@@ -18,14 +17,12 @@ int main(void) {
     SYSTEM_Initialize();
 
     State current_state = InitStateMachine();
-    InitServo();
-    
+
     //endless loop
     while (1) {
-        msDelay(250); // delay approximately 0.25 second
+        msDelay(1); // small delay to prevent thrashing
         initButtons(0x000F); // All buttons as inputs: 0xF
-        
-    
+
         processCurrentState(&current_state); // Tick State Machine
     }
 }

@@ -6,6 +6,12 @@
 
 #include "AMG88.h"
 #include "peripherals.h"
+
+typedef unsigned char bool;
+
+#define TRUE (1)
+#define FALSE (0)
+
 /*******************************************************************************
 variable value definition
 *******************************************************************************/
@@ -55,7 +61,6 @@ bool bAMG_PUB_I2C_Read( uchar ucI2cAddr, uchar ucRegAddr, uchar ucSize, uchar* u
     /* return : TRUE: success, FALSE: failure */
     /* This function is only interface definition. */
 
-    
     uchar *arr_ptr = ucDstAddr;
     int i;
     for(i = 0; i < ucSize; i++)    
@@ -68,7 +73,7 @@ bool bAMG_PUB_I2C_Read( uchar ucI2cAddr, uchar ucRegAddr, uchar ucSize, uchar* u
         I2Csendbyte(ucRegAddr + i); // Send the register to read
         us_delay(100);
         I2CStop();
-        
+
         // 2. Send start command + read command. 
         I2CStart();
         us_delay(100);
@@ -79,7 +84,7 @@ bool bAMG_PUB_I2C_Read( uchar ucI2cAddr, uchar ucRegAddr, uchar ucSize, uchar* u
         char temp = I2Cgetbyte();
         us_delay(100);
         I2CStop();
-        
+
         *arr_ptr = temp;
         arr_ptr ++;
     }
@@ -160,11 +165,11 @@ int numPixelsInRange(short t1, short t2)
         if(t1 <= g_ashRawTemp[i] && g_ashRawTemp[i] < t2)
           num_in_range++;  
     }
-    
+
     return num_in_range;
 }
 
-short maxPixel()
+float maxPixel()
 {
     int largest_value = -100;
     int i;
@@ -173,6 +178,6 @@ short maxPixel()
         if(largest_value < g_ashRawTemp[i])
           largest_value = g_ashRawTemp[i];  
     }
-    
+
     return largest_value;    
 }

@@ -1,8 +1,7 @@
 /* 
  * File:   Smart UV State Machine
  * Author: Nicole Baldy
- * Comments: State Machine Interface Definition
- * Revision history: Initial Revision
+ * Comments: State Machine Definition
  */
 
 #ifndef SMART_UV_STATE_MACHINE_H
@@ -14,38 +13,11 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef enum StateName
-{
-    STATE_UNKNOWN,
-    STATE_INITIALIZATION,
-    STATE_WAIT_FOR_OBJECT,
-    STATE_VERIFY_CHAMBER_READY,
-    STATE_WAIT_FOR_CYCLE_START,
-    STATE_ACTIVE_CYCLE,
-    STATE_WAIT_FOR_RELEASE,
-    STATE_FAULT,
-    STATE_DOOR_OPENING,
-    STATE_RUNNING // Parent State Only
-} StateName;
+#include "StateInformation.h"
 
-typedef enum FaultName
-{
-    FAULT_UNKNOWN,
-    NO_FAULT,
-    FAULT_ESTOP,
-    FAULT_DOOR_OPEN,
-    FAULT_TIMER_ERROR,
-    FAULT_INVALID_STATE
-} FaultName;
-
-// 8-character representation of state name for display
-typedef struct StateNameStr
-{
-    char str[17]; // 16 char + nullcharacter
-} StateNameStr;
-
-StateNameStr getStateNameStr(enum StateName state_enumeration);
-
+#define TRUE 1
+#define FALSE 0
+#define bool unsigned int
 
 typedef struct State
 {
@@ -53,6 +25,8 @@ typedef struct State
     enum StateName state_name;
     unsigned char display;
     enum FaultName active_fault;
+    bool cycle_ok;
+    int seconds_remaining;
     // TODO(NEB): Store last known sensor status, Estop status, etc here.
 } State;
 
@@ -62,7 +36,6 @@ typedef struct State
 void processCurrentState(State* current_state);
 
 State InitStateMachine();
-
 
 // Treat below functions as private.
 void Initialization(State* state);
@@ -78,6 +51,11 @@ void Running(State* state);
 
 void SetFault(State* state); // TODO(NEB): Fault Codes, for now just set state.
 void printFaultState(FaultName fault_name);
+
+// Perform standard state transition actions
+// Clear LCD 2nd Row
+// Clear U2 Commands
+void Transition(State *state, StateName new_state);
 
 // TODO(NEB): Temporary for state proof.
 enum Buttons

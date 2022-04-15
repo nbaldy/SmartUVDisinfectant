@@ -8,4 +8,6 @@ Upload to microcontroller via MPLAB X IDE v5.50
 
 ![State Machine to be Implemented](./images/StateMachineDiagram.png)
 
-More information to be uploaded shortly
+Upload code to board via an MPLAB X IDE. Version used was v5.50 with the compiler xc16 (v1.70) on the PIC24FJ128GA010 (within the Explorer16).
+
+

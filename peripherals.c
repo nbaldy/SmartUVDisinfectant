@@ -107,7 +107,7 @@ void WriteLCD( int addr, char c)
     PMDIN1 = c;
 } // WriteLCD
 
-void putsLCD( char *s)
+void putsLCD( const char *s)
 {
     while( *s) putLCD( *s++); // See paragraph starting at bottom, pg. 87 text
 } //putsLCD

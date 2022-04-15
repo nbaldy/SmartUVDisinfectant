@@ -12,11 +12,6 @@
 /*******************************************************************************
 macro definition
 *******************************************************************************/
-#define TRUE (1)
-#define FALSE (0)
-
-typedef unsigned char bool;
-typedef unsigned char uchar;
 
 /* Grid-EYE's I2C slave address */
 // Was 0xD0, 0xD2
@@ -33,7 +28,6 @@ typedef unsigned char uchar;
 // 128 temperature registers, 64 Hi, 64 lo
 #define GRIDEYE_REGSZ_TMP (0x80) /* size of temperature resister */
 
-
 /* Grid-EYE's number of pixels */
 #define SNR_SZ_X (8)
 #define SNR_SZ_Y (8)
@@ -42,8 +36,10 @@ typedef unsigned char uchar;
 /*******************************************************************************
 method definition
 *******************************************************************************/
-bool bReadTempFromGridEYE( void );
-bool bAMG_PUB_I2C_Read( uchar, uchar, uchar, uchar* );
+typedef unsigned char uchar;
+
+uchar bReadTempFromGridEYE( void );
+uchar bAMG_PUB_I2C_Read( uchar, uchar, uchar, uchar* );
 short shAMG_PUB_TMP_ConvThermistor( uchar[2] );
 short shAMG_PUB_TMP_ConvTemperature( uchar[2] );
 void vAMG_PUB_TMP_ConvTemperature64( uchar*, short* );
@@ -52,6 +48,6 @@ float  fAMG_PUB_CMN_ConvStoF( short );
 
 // t1 expected < t2
 int numPixelsInRange(short t1, short t2);
-short maxPixel();
+float maxPixel();
 #endif	/* AMG88_H */
 
