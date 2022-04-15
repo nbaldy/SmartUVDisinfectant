@@ -15,12 +15,11 @@ void Lock()
     int n;
     for (n = 0; n < 2000; n++)
     {
-        LOCK_TRIS = 0; // Output
-        LOCK_PIN = 1;
+        LOCK_PIN = 0; // Lock is non-powered
     }
 }
 
 void Unlock()
 {
-    LOCK_PIN = 0;
+    LOCK_PIN = 1; // Lock is powered
 }
